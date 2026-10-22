@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Little Learners</title>
+<meta name="theme-color" content="#FFF8EC">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Little Learners">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  :root { --bg:#FFF8EC; --ink:#4A4038; --soft:#EFE4D2; --card:#FFFFFF; --accent:#6BAF92; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); overflow:hidden; touch-action:manipulation;
+    font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, sans-serif; }
+  #app { height:100dvh; display:flex; flex-direction:column; align-items:center;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
+  button { font:inherit; color:inherit; border:0; background:none; cursor:pointer; }
+  h1 { font-size: clamp(28px, 7vw, 48px); margin: 8px 0 16px; text-align:center; }
+  .center { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; width:100%; }
+  .big-emoji { font-size: clamp(90px, 25vw, 160px); line-height:1; }
+  .msg { font-size: clamp(24px, 6vw, 40px); max-width: 16em; line-height:1.3; }
+
+  /* Home */
+  .tiles { flex:1; width:100%; max-width:760px; display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); align-content:center; }
+  .tile { background:var(--card); border-radius:28px; padding:18px 8px; display:flex; flex-direction:column; align-items:center; gap:10px;
+    box-shadow: 0 4px 0 var(--soft); font-size: clamp(20px, 5vw, 28px); min-height:150px; justify-content:center; }
+  .tile .ic { width:80px; height:80px; font-size:64px; line-height:80px; display:flex; align-items:center; justify-content:center; }
+  .tile:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--soft); }
+  .gear { position:fixed; right:max(12px, env(safe-area-inset-right)); bottom:max(12px, env(safe-area-inset-bottom)); width:48px; height:48px; font-size:22px; opacity:.35; }
+
+  /* Game */
+  .bar { width:100%; max-width:760px; display:flex; align-items:center; justify-content:space-between; }
+  .home { width:72px; height:72px; font-size:40px; background:var(--card); border-radius:50%; box-shadow:0 3px 0 var(--soft); }
+  .dots { display:flex; gap:10px; }
+  .dot { width:16px; height:16px; border-radius:50%; background:var(--soft); }
+  .dot.on { background:var(--accent); }
+  .prompt { margin-top:12px; font-size: clamp(26px, 7vw, 44px); background:var(--card); border-radius:24px; padding:12px 24px; box-shadow:0 3px 0 var(--soft); text-align:center; }
+  .prompt::after { content:" 🔊"; font-size:.7em; opacity:.6; }
+  .opts { flex:1; width:100%; max-width:760px; display:flex; flex-wrap:wrap; align-items:center; align-content:center; justify-content:center; gap:20px; }
+  .opt { width: clamp(100px, 27vw, 190px); height: clamp(100px, 27vw, 190px); background:var(--card); border-radius:28px; box-shadow:0 4px 0 var(--soft);
+    display:flex; align-items:center; justify-content:center; transition: transform .4s ease, opacity .4s ease, box-shadow .4s ease; }
+  .opt svg { width:72%; height:72%; }
+  .opt .blob { width:72%; aspect-ratio:1; border-radius:50%; }
+  .opt .em { font-size: clamp(60px, 17vw, 120px); line-height:1; }
+  .opt .em.small { font-size: clamp(28px, 7vw, 46px); }
+  .opt.no { opacity:.35; }
+  .opt.yes, .opt.hint { box-shadow: 0 0 0 6px var(--accent); }
+  .opt.yes { transform: scale(1.08); }
+  .count .opt { width: clamp(90px, 22vw, 150px); height: clamp(90px, 22vw, 150px); position:relative; }
+  .count .opt.done .em { opacity:.3; }
+  .count .opt .n { position:absolute; font-size: clamp(36px, 9vw, 60px); font-weight:700; color:var(--accent); }
+
+  /* Grown-ups */
+  .panel { width:100%; max-width:520px; background:var(--card); border-radius:24px; padding:24px; box-shadow:0 4px 0 var(--soft); font-size:18px; text-align:left; }
+  .panel h2 { margin:0 0 12px; font-size:24px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; margin:8px 0 18px; }
+  .chip { padding:12px 18px; border-radius:14px; background:var(--soft); font-size:18px; min-width:64px; }
+  .chip.sel { background:var(--accent); color:#fff; }
+  .wide { width:100%; padding:16px; border-radius:16px; background:var(--accent); color:#fff; font-size:20px; margin-top:8px; }
+  .wide.alt { background:var(--soft); color:var(--ink); }
+  .note { font-size:15px; opacity:.75; line-height:1.4; }
+  .grown { font-size:16px; opacity:.5; padding:12px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ---------- storage (never required to work) ---------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('ll_' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('ll_' + k, JSON.stringify(v)); } catch {} }
+};
+let settings = store.get('settings', { minutes: 15, sound: true });
+let session = store.get('session', { used: 0, last: 0, locked: false });
+// A long break (1 h+) starts a fresh session, unless a parent hasn't unlocked yet.
+if (!session.locked && Date.now() - session.last > 3600e3) session.used = 0;
+
+/* ---------- helpers ---------- */
+const app = document.getElementById('app');
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const sample = (a, n) => shuffle(a).slice(0, n);
+const pick = a => a[Math.random() * a.length | 0];
+const cap = s => s[0].toUpperCase() + s.slice(1);
+
+function say(text) {
+  if (!settings.sound || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.1;
+  speechSynthesis.speak(u);
+}
+
+/* ---------- content ---------- */
+const COLORS = [['red', '#E5534B'], ['blue', '#4A90D9'], ['yellow', '#F2C94C'], ['green', '#58B368'], ['orange', '#F2994A'], ['purple', '#9B6BCC']];
+const SHAPES = {
+  circle: '<circle cx="50" cy="50" r="42"/>',
+  square: '<rect x="10" y="10" width="80" height="80" rx="6"/>',
+  triangle: '<polygon points="50,8 94,90 6,90"/>',
+  star: '<polygon points="50,6 62,38 96,38 68,58 79,92 50,72 21,92 32,58 4,38 38,38"/>',
+  heart: '<path d="M50 88C20 66 6 50 6 32 6 18 17 8 30 8c10 0 16 6 20 14 4-8 10-14 20-14 13 0 24 10 24 24 0 18-14 34-44 56z"/>'
+};
+const svg = (name, fill) => `<svg viewBox="0 0 100 100" fill="${fill}">${SHAPES[name]}</svg>`;
+const ANIMALS = [['🐄', 'moo', 'cow'], ['🐶', 'woof', 'dog'], ['🐱', 'meow', 'cat'], ['🦆', 'quack', 'duck'], ['🐑', 'baa', 'sheep'],
+  ['🐷', 'oink', 'pig'], ['🦁', 'roar', 'lion'], ['🐸', 'ribbit', 'frog'], ['🐔', 'cluck', 'chicken']];
+const THINGS = ['🍎', '🐟', '⭐', '🚗', '🐞', '🌸', '🍌', '🎈', '🐥', '⚽'];
+
+// Each make() returns one question: id (to avoid repeats), prompt, options, praise, and a real-world "go find" line.
+const GAMES = {
+  colors: { title: 'Colors', icon: svg('circle', '#E5534B'), make() {
+    const opts = sample(COLORS, 3), [name] = opts[0];
+    return { id: name, prompt: `Tap the ${name} one.`, praise: `Yes! ${cap(name)}!`, find: `Can you find something ${name} near you?`,
+      options: shuffle(opts).map(c => ({ html: `<div class="blob" style="background:${c[1]}"></div>`, correct: c[0] === name })) };
+  } },
+  shapes: { title: 'Shapes', icon: svg('triangle', '#4A90D9'), make() {
+    const opts = sample(Object.keys(SHAPES), 3), name = opts[0], fill = pick(COLORS)[1];
+    return { id: name, prompt: `Find the ${name}.`, praise: `Yes! A ${name}!`, find: `Can you find a ${name} shape near you?`,
+      options: shuffle(opts).map(s => ({ html: svg(s, fill), correct: s === name })) };
+  } },
+  animals: { title: 'Animals', icon: '🐄', make() {
+    const opts = sample(ANIMALS, 3), [, sound, name] = opts[0];
+    return { id: name, prompt: `Who says ${sound}?`, praise: `Yes! The ${name} says ${sound}!`, find: `Can you say ${sound}, like a ${name}?`,
+      options: shuffle(opts).map(a => ({ html: `<span class="em">${a[0]}</span>`, correct: a[2] === name })) };
+  } },
+  sizes: { title: 'Big & Small', icon: '🐘', make() {
+    const thing = pick(THINGS), want = pick(['big', 'small']);
+    return { id: thing + want, prompt: `Tap the ${want} one.`, praise: `Yes! That one is ${want}!`, find: 'Can you find something big, and something small?',
+      options: shuffle(['big', 'small']).map(s => ({ html: `<span class="em ${s === 'small' ? 'small' : ''}">${thing}</span>`, correct: s === want })) };
+  } },
+  counting: { title: 'Counting', icon: '🖐️', count: true, make() {
+    const n = 1 + (Math.random() * 5 | 0), thing = pick(THINGS);
+    return { id: n, n, thing, prompt: 'Tap each one to count!', praise: `${n}! You counted ${n}!`, find: 'Can you count your fingers? One, two, three…' };
+  } }
+};
+
+/* ---------- session timer (rule 1) ---------- */
+let screen = 'home';
+function save() { store.set('session', session); }
+function timeUp() { return session.used >= settings.minutes * 60; }
+setInterval(() => {
+  if (document.hidden || session.locked) return;
+  session.used += 5; session.last = Date.now(); save();
+  // Never cut a question off mid-way: lock between questions, or right away if on a menu.
+  if (timeUp() && (screen === 'home' || screen === 'done')) showRest();
+}, 5000);
+
+/* ---------- screens ---------- */
+function showHome() {
+  if (session.locked || timeUp()) return showRest();
+  screen = 'home';
+  app.innerHTML = `<h1>Let's play!</h1><div class="tiles">${Object.entries(GAMES).map(([k, g]) =>
+    `<button class="tile" data-g="${k}"><span class="ic">${g.icon}</span>${g.title}</button>`).join('')}</div>
+    <button class="gear" aria-label="Grown-ups">⚙️</button>`;
+  app.querySelectorAll('.tile').forEach(b => b.onclick = () => startGame(b.dataset.g));
+  app.querySelector('.gear').onclick = () => showGate(showSettings);
+}
+
+let cur = null, busy = false;
+function startGame(key) { cur = { key, q: 0, prev: null }; nextQ(); }
+
+function nextQ() {
+  busy = false;
+  if (timeUp()) return showRest();
+  if (cur.q >= 5) return showDone();
+  const g = GAMES[cur.key];
+  let item; do { item = g.make(); } while (item.id === cur.prev);
+  cur.q++; cur.prev = item.id; cur.item = item; cur.misses = 0; cur.counted = 0;
+  screen = 'game';
+  const dots = [1, 2, 3, 4, 5].map(i => `<span class="dot ${i <= cur.q ? 'on' : ''}"></span>`).join('');
+  const opts = g.count
+    ? Array.from({ length: item.n }, () => `<button class="opt"><span class="em">${item.thing}</span></button>`).join('')
+    : item.options.map((o, i) => `<button class="opt" data-i="${i}">${o.html}</button>`).join('');
+  app.innerHTML = `<div class="bar"><button class="home" aria-label="Home">🏠</button><div class="dots">${dots}</div><span style="width:72px"></span></div>
+    <button class="prompt">${item.prompt}</button><div class="opts ${g.count ? 'count' : ''}">${opts}</div>`;
+  app.querySelector('.home').onclick = showHome;
+  app.querySelector('.prompt').onclick = () => say(item.prompt);
+  app.querySelectorAll('.opt').forEach(b => b.onclick = () => g.count ? countTap(b) : answer(b));
+  say(item.prompt);
+}
+
+function answer(b) {
+  if (busy || b.classList.contains('no')) return;
+  const item = cur.item;
+  if (item.options[b.dataset.i].correct) {
+    busy = true; b.classList.add('yes'); say(item.praise);
+    setTimeout(nextQ, 2200);
+  } else {
+    b.classList.add('no'); say('Try again.');
+    if (++cur.misses >= 2) app.querySelectorAll('.opt').forEach(o => { if (item.options[o.dataset.i].correct) o.classList.add('hint'); });
+  }
+}
+
+function countTap(b) {
+  if (busy || b.classList.contains('done')) return;
+  b.classList.add('done');
+  b.insertAdjacentHTML('beforeend', `<span class="n">${++cur.counted}</span>`);
+  if (cur.counted === cur.item.n) { busy = true; setTimeout(() => say(cur.item.praise), 500); setTimeout(nextQ, 3200); }
+  else say(String(cur.counted));
+}
+
+function showDone() {
+  screen = 'done';
+  const find = cur.item.find;
+  app.innerHTML = `<div class="center"><div class="big-emoji">👏</div><div class="msg">All done!<br>${find}</div>
+    <button class="home" style="width:110px;height:110px;font-size:60px" aria-label="Home">🏠</button></div>`;
+  app.querySelector('.home').onclick = showHome;
+  say('All done! ' + find);
+}
+
+function showRest() {
+  screen = 'rest';
+  if (!session.locked) { session.locked = true; save(); }
+  app.innerHTML = `<div class="center"><div class="big-emoji">🌙</div>
+    <div class="msg">Screen time is all done!<br>Let's go play with toys.</div></div>
+    <button class="grown">Grown-ups</button>`;
+  app.querySelector('.grown').onclick = () => showGate(showSettings);
+  say("Screen time is all done! Let's go play with toys.");
+}
+
+/* ---------- parent gate + settings (rule 7) ---------- */
+function showGate(onPass) {
+  const back = screen === 'rest' ? showRest : showHome;
+  screen = 'gate';
+  const a = 3 + (Math.random() * 7 | 0), b = 3 + (Math.random() * 7 | 0), sum = a + b;
+  const choices = shuffle([sum, sum + 1, sum - 2, sum + 3]);
+  app.innerHTML = `<div class="center"><div class="panel"><h2>For grown-ups</h2>
+    <p>What is ${a} + ${b}?</p><div class="row">${choices.map(c => `<button class="chip" data-v="${c}">${c}</button>`).join('')}</div>
+    <button class="wide alt">Back</button></div></div>`;
+  app.querySelectorAll('.chip').forEach(c => c.onclick = () => (+c.dataset.v === sum ? onPass() : back()));
+  app.querySelector('.wide').onclick = back;
+}
+
+function showSettings() {
+  screen = 'settings';
+  const usedMin = Math.floor(session.used / 60);
+  app.innerHTML = `<div class="center"><div class="panel"><h2>Grown-up settings</h2>
+    <div>Session length</div><div class="row">${[10, 15, 20].map(m =>
+      `<button class="chip ${settings.minutes === m ? 'sel' : ''}" data-m="${m}">${m} min</button>`).join('')}</div>
+    <div>Voice</div><div class="row">${[true, false].map(s =>
+      `<button class="chip ${settings.sound === s ? 'sel' : ''}" data-s="${s}">${s ? 'On' : 'Off'}</button>`).join('')}</div>
+    <p class="note">Used this session: ${usedMin} of ${settings.minutes} min${session.locked ? ' (locked)' : ''}.<br>
+    Tip: turn on Guided Access (iPhone/iPad Settings → Accessibility) so the app can't be swiped away.</p>
+    <button class="wide" id="fresh">Start a new session</button>
+    <button class="wide alt" id="back">Back</button></div></div>`;
+  app.querySelectorAll('[data-m]').forEach(c => c.onclick = () => { settings.minutes = +c.dataset.m; store.set('settings', settings); showSettings(); });
+  app.querySelectorAll('[data-s]').forEach(c => c.onclick = () => { settings.sound = c.dataset.s === 'true'; store.set('settings', settings); showSettings(); });
+  app.querySelector('#fresh').onclick = () => { session = { used: 0, last: Date.now(), locked: false }; save(); showHome(); };
+  app.querySelector('#back').onclick = showHome;
+}
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+showHome();
+</script>
+</body>
+</html>
