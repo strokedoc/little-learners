@@ -1,6 +1,6 @@
 // Cache everything on install so the app works fully offline (planes, car rides).
-const CACHE = 'little-learners-v1';
-const FILES = ['./', 'index.html', 'manifest.json', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'];
+const CACHE = 'little-learners-v2';
+const FILES = ['./', 'index.html', 'art.js', 'fonts/fredoka.woff2', 'manifest.json', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

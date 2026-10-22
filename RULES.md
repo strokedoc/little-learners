@@ -13,6 +13,8 @@ Every feature must pass all of these.
 
 ## 2. No hooks
 - No points, stars, coins, streaks, levels, badges, unlocks, collections, or surprise prizes.
+- Difficulty **adjusts itself quietly** (levels 1–3 per game: an easy round moves up, a hard one moves
+  down). She never sees a level, score or "level up" — it only keeps the games hard enough to need thinking.
 - No variable rewards (the slot-machine effect). A right answer always gets the same gentle reply.
 - No characters that beg the child to stay or are "sad" when they leave.
 - No notifications, no daily reminders.
@@ -50,3 +52,6 @@ Every feature must pass all of these.
 ## Tip for parents
 On iPhone/iPad, turn on **Guided Access** (Settings → Accessibility → Guided Access, then triple-click
 the side button inside the app) so the child can't swipe out to other apps.
+
+## Credits
+Colouring-page drawings: [OpenMoji](https://openmoji.org) (CC BY-SA 4.0). Font: Fredoka (SIL Open Font License).

@@ -6,3 +6,6 @@ Built to be deliberately **non-addictive** — see [RULES.md](RULES.md) for the 
 
 **Install on iPhone/iPad:** open the site in Safari → Share → *Add to Home Screen*. Open it once while
 online; after that it works with no internet. Grown-up settings are behind the faint ⚙️ (bottom-right).
+
+Difficulty adjusts itself per game (levels 1–3). Colouring drawings by [OpenMoji](https://openmoji.org), CC BY-SA 4.0;
+font Fredoka, SIL OFL.
