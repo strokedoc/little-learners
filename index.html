@@ -57,6 +57,16 @@
     transform:translate(-50%, -50%); font-size: clamp(40px, 11vw, 64px); line-height:1; }
   .scene .opt.yes { transform:translate(-50%, -50%) scale(1.2); }
   .scene .opt.found { background:rgba(255,255,255,.7); box-shadow:0 0 0 4px var(--accent); }
+  .colorer { width:100%; display:flex; align-items:center; justify-content:center; gap:16px; }
+  .choose { display:grid; gap:16px; }
+  .pick { background:var(--card); border-radius:24px; box-shadow:0 4px 0 var(--soft); padding:10px; display:flex; align-items:center; justify-content:center; }
+  .pick canvas { width:100%; height:100%; }
+  .pick .em { font-size:80px; }
+  .paper { position:relative; background:#fff; border-radius:16px; box-shadow:0 4px 0 var(--soft); overflow:hidden; touch-action:none; }
+  .paper canvas { position:absolute; inset:0; width:100%; height:100%; }
+  .palette { display:grid; gap:10px; }
+  .crayon { border-radius:50%; box-shadow:0 3px 0 var(--soft); }
+  .crayon.sel { box-shadow:0 0 0 5px #fff, 0 0 0 9px var(--ink); }
   .glyph { font-size: clamp(64px, 18vw, 120px); color:#9B6BCC; font-weight:800; line-height:1; }
   .tile .glyph { font-size:56px; }
   .puzzle { width:100%; display:flex; flex-direction:column; align-items:center; gap:18px; }
@@ -85,7 +95,7 @@
   @media (max-height: 500px) {
     #app { position:relative; }
     .dots { display:none; }
-    .prompt { position:absolute; top:max(16px, env(safe-area-inset-top)); left:50%; transform:translateX(-50%); margin:0; max-width:calc(100% - 240px); white-space:nowrap; }
+    .prompt { position:absolute; top:max(16px, env(safe-area-inset-top)); left:50%; transform:translateX(-50%); margin:0; max-width:calc(100% - 280px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .opts { margin-top:12px; }
     .scene .opt { min-width:80px; min-height:80px; }
   }
@@ -213,6 +223,10 @@ const GAMES = {
     const n = 3 + (Math.random() * 8 | 0), thing = pick(THINGS);
     return { id: n, n, thing, prompt: 'Tap each one to count!', praise: `${n}! You counted ${n}!`, reveal: String(n), find: 'Can you count your toes?' };
   } },
+  color: { title: 'Coloring', icon: '🖍️', color: true, rounds: 2, make() {
+    const choices = [...sample(Object.keys(PAGES), 2), 'letter:' + pick(Object.keys(LETTERS)), 'blank'];
+    return { id: Math.random(), choices, prompt: 'Pick a picture to color!', find: 'Can you show a grown-up your pictures?' };
+  } },
   animals: { title: 'Animals', icon: '🐄', make() {
     const opts = sample(ANIMALS, 3), [, sound, name] = opts[0];
     return { id: name, prompt: `Who says ${sound}?`, praise: `Yes! The ${name} says ${sound}!`, find: `Can you say ${sound}, like a ${name}?`,
@@ -230,7 +244,14 @@ setInterval(() => {
   if (document.hidden || session.locked) return;
   session.used += dt; session.last = now;
   // Lock (and save) right away; the rest screen shows between questions so nothing is cut off mid-way.
-  if (timeUp()) { session.locked = true; if (screen === 'home' || screen === 'done') showRest(); }
+  if (timeUp()) {
+    session.locked = true;
+    if (screen === 'home' || screen === 'done') showRest();
+    else if (screen === 'game' && GAMES[cur.key].color && !cur.warned) {  // colouring never "ends", so: one minute's warning, then rest
+      cur.warned = true; say('One more minute to finish your picture!');
+      setTimeout(() => { if (screen === 'game') showRest(); }, 60000);
+    }
+  }
   save();
 }, 5000);
 
@@ -268,18 +289,23 @@ function render() {
   cur.misses = 0; cur.counted = 0; screen = 'game';
   if (g.seek) layoutScene(cur.scene);
   const dots = Array.from({ length: rounds }, (_, i) => `<span class="dot ${i < cur.q ? 'on' : ''}"></span>`).join('');
-  const opts = g.seek ? `<div class="scene">${item.options.map((o, i) =>
+  const opts = g.color ? '<div class="colorer"></div>'
+    : g.seek ? `<div class="scene">${item.options.map((o, i) =>
       `<button class="opt ${o.found ? 'found' : ''}" data-i="${i}" style="left:${cur.scene[i].x}%;top:${cur.scene[i].y}%">${o.html}</button>`).join('')}</div>`
     : g.puzzle ? '<div class="puzzle"></div>'
     : g.trace ? '<canvas class="trace"></canvas>'
     : g.count ? Array.from({ length: item.n }, () => `<button class="opt"><span class="em">${item.thing}</span></button>`).join('')
     : item.options.map((o, i) => `<button class="opt" data-i="${i}">${o.html}</button>`).join('');
-  app.innerHTML = `<div class="bar"><button class="home" aria-label="Home">🏠</button><div class="dots">${dots}</div><span style="width:90px"></span></div>
+  app.innerHTML = `<div class="bar"><button class="home" aria-label="Home">🏠</button><div class="dots">${dots}</div>${g.color && item.page
+    ? '<button class="home done-btn" aria-label="Finished">✅</button>' : '<span style="width:90px"></span>'}</div>
     <button class="prompt">${item.prompt}</button><div class="opts ${g.count ? 'count' : ''}">${opts}</div>`;
   app.querySelector('.home').onclick = showHome;
   app.querySelector('.prompt').onclick = () => say(item.prompt);
   if (g.trace) setupTrace(app.querySelector('.trace'), item);
   if (g.puzzle) setupPuzzle(app.querySelector('.puzzle'), item);
+  if (g.color) setupColor(app.querySelector('.colorer'), item);
+  const done = app.querySelector('.done-btn');
+  if (done) done.onclick = () => { if (busy) return; busy = true; app.querySelector('.prompt').textContent = 'Beautiful!'; say('Beautiful! Show a grown-up!'); later(nextQ, 4000); };
   app.querySelectorAll('.opt').forEach(b => b.onclick = () => g.count ? countTap(b) : answer(b));
 }
 let resizeT;
@@ -417,6 +443,166 @@ function setupPuzzle(box, item) {
       }
     };
   });
+}
+
+/* ---------- colouring ---------- */
+// Line art on a 600×600 grid. Every picture page also carries its letter as a small bubble letter in the corner.
+const RES = 800;  // drawing resolution (pages are scaled up from the 600 grid)
+const C = (x, cx, cy, r) => { x.beginPath(); x.arc(cx, cy, r, 0, 7); x.stroke(); };
+const E = (x, cx, cy, rx, ry, rot = 0) => { x.beginPath(); x.ellipse(cx, cy, rx, ry, rot, 0, 7); x.stroke(); };
+const P = (x, pts, close = true) => { x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); if (close) x.closePath(); x.stroke(); };
+const DOT = (x, cx, cy, r) => { x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); };
+const SMILE = (x, cx, cy, r) => { x.beginPath(); x.arc(cx, cy, r, 0.3, Math.PI - 0.3); x.stroke(); };
+const PAGES = {
+  apple: { L: 'A', draw(x) {
+    x.beginPath(); x.moveTo(340, 210); x.bezierCurveTo(270, 150, 150, 190, 160, 330); x.bezierCurveTo(170, 460, 280, 540, 340, 500);
+    x.bezierCurveTo(400, 540, 510, 460, 520, 330); x.bezierCurveTo(530, 190, 410, 150, 340, 210); x.stroke();
+    P(x, [[340, 210], [355, 130]], false); E(x, 405, 150, 45, 20, -0.4);
+  } },
+  ball: { L: 'B', draw(x) { C(x, 340, 350, 190); E(x, 340, 350, 80, 190); P(x, [[150, 350], [530, 350]], false); } },
+  butterfly: { L: 'B', draw(x) {
+    E(x, 240, 270, 105, 80, -0.3); E(x, 440, 270, 105, 80, 0.3); E(x, 255, 440, 80, 60, 0.3); E(x, 425, 440, 80, 60, -0.3);
+    E(x, 340, 350, 22, 140); P(x, [[330, 215], [290, 150]], false); P(x, [[350, 215], [390, 150]], false); C(x, 290, 145, 12); C(x, 390, 145, 12);
+  } },
+  cat: { L: 'C', draw(x) {
+    P(x, [[210, 300], [225, 150], [300, 225]]); P(x, [[470, 300], [455, 150], [380, 225]]); C(x, 340, 370, 170);
+    C(x, 280, 340, 25); C(x, 400, 340, 25); P(x, [[322, 400], [358, 400], [340, 422]]); P(x, [[340, 422], [340, 445]], false);
+    x.beginPath(); x.arc(318, 445, 22, 0, Math.PI); x.stroke(); x.beginPath(); x.arc(362, 445, 22, 0, Math.PI); x.stroke();
+    P(x, [[250, 405], [150, 385]], false); P(x, [[250, 425], [150, 440]], false); P(x, [[430, 405], [530, 385]], false); P(x, [[430, 425], [530, 440]], false);
+  } },
+  castle: { L: 'C', draw(x) {
+    x.strokeRect(190, 300, 300, 260);
+    [100, 480].forEach(a => {
+      x.strokeRect(a, 220, 100, 340);
+      P(x, [[a, 220], [a, 185], [a + 30, 185], [a + 30, 205], [a + 70, 205], [a + 70, 185], [a + 100, 185], [a + 100, 220]], false);
+      x.strokeRect(a + 30, 280, 40, 60); P(x, [[a + 50, 185], [a + 50, 110]], false); P(x, [[a + 50, 110], [a + 100, 128], [a + 50, 146]]);
+    });
+    x.beginPath(); x.moveTo(300, 560); x.lineTo(300, 470); x.arc(340, 470, 40, Math.PI, 0); x.lineTo(380, 560); x.stroke();
+  } },
+  fish: { L: 'F', draw(x) {
+    P(x, [[460, 350], [570, 250], [570, 450]]); E(x, 310, 350, 180, 110); C(x, 220, 320, 20);
+    P(x, [[290, 245], [350, 180], [380, 252]], false); x.beginPath(); x.arc(150, 350, 60, -0.6, 0.6); x.stroke();
+  } },
+  flower: { L: 'F', draw(x) {
+    x.strokeRect(330, 330, 20, 240); E(x, 280, 470, 50, 22, 0.5); E(x, 400, 450, 50, 22, -0.5);
+    for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; C(x, 340 + 95 * Math.cos(a), 270 + 95 * Math.sin(a), 55); }
+    C(x, 340, 270, 55);
+  } },
+  house: { L: 'H', draw(x) {
+    x.strokeRect(420, 170, 40, 80); x.strokeRect(170, 300, 340, 250); P(x, [[140, 300], [340, 140], [540, 300]]); x.strokeRect(300, 420, 80, 130);
+    [200, 410].forEach(a => { x.strokeRect(a, 340, 70, 70); P(x, [[a + 35, 340], [a + 35, 410]], false); P(x, [[a, 375], [a + 70, 375]], false); });
+  } },
+  princess: { L: 'P', draw(x) {
+    E(x, 340, 290, 125, 150); C(x, 340, 260, 85); P(x, [[275, 190], [270, 110], [305, 150], [340, 95], [375, 150], [410, 110], [405, 190]]);
+    P(x, [[290, 345], [390, 345], [490, 575], [190, 575]]); DOT(x, 310, 250, 8); DOT(x, 370, 250, 8); SMILE(x, 340, 275, 30);
+  } },
+  sun: { L: 'S', draw(x) {
+    C(x, 340, 330, 120);
+    for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6, p = (r, d) => [340 + r * Math.cos(a + d), 330 + r * Math.sin(a + d)]; P(x, [p(140, -0.12), p(220, 0), p(140, 0.12)]); }
+    DOT(x, 300, 300, 10); DOT(x, 380, 300, 10); SMILE(x, 340, 335, 50);
+  } },
+  tree: { L: 'T', draw(x) { x.strokeRect(300, 380, 80, 190); C(x, 250, 300, 90); C(x, 430, 300, 90); C(x, 340, 220, 110); } }
+};
+
+// Bubble letter from the tracing strokes: a thick dark line with its middle cut out leaves a hollow letter to colour in.
+function bubble(x, L, ox, oy, size) {
+  x.save(); x.translate(ox, oy); x.scale(size / 100, size / 100);
+  const tube = w => { x.lineWidth = w; LETTERS[L].forEach(p => { x.beginPath(); p.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); }); };
+  tube(20); x.globalCompositeOperation = 'destination-out'; tube(14);
+  x.restore();
+}
+
+function drawPage(key) {
+  const c = document.createElement('canvas'); c.width = c.height = RES;
+  const x = c.getContext('2d');
+  x.scale(RES / 600, RES / 600); x.lineWidth = 8; x.lineJoin = x.lineCap = 'round'; x.strokeStyle = x.fillStyle = '#3A3330';
+  if (key.startsWith('letter:')) bubble(x, key.slice(7), 60, 60, 480);
+  else if (key !== 'blank') { PAGES[key].draw(x); x.lineWidth = 8; bubble(x, PAGES[key].L, 15, 15, 150); }
+  return c;
+}
+
+const pagePrompt = k => k === 'blank' ? 'Draw anything you like!'
+  : k.startsWith('letter:') ? `Let's color the letter ${k.slice(7)}! ${k.slice(7)} is for ${WORDS[k.slice(7)][0]}.`
+  : `Let's color the ${k}! ${PAGES[k].L} is for ${k}.`;
+
+// The shape under the finger when a stroke starts (flood fill up to the lines). The crayon only paints inside it.
+function regionMask(walls, sx, sy) {
+  const N = RES; let start = sy * N + sx;
+  for (let r = 1; r <= 12 && walls[start]; r++)  // started on a line: use the nearest open spot
+    for (let dy = -r; dy <= r && walls[start]; dy++) for (let dx = -r; dx <= r; dx++) {
+      const x = sx + dx, y = sy + dy;
+      if (x >= 0 && y >= 0 && x < N && y < N && !walls[y * N + x]) { start = y * N + x; break; }
+    }
+  if (walls[start]) return null;
+  const m = new Uint8Array(N * N), stack = [start]; m[start] = 1;
+  while (stack.length) {
+    const i = stack.pop(), x = i % N;
+    for (const j of [x > 0 ? i - 1 : -1, x < N - 1 ? i + 1 : -1, i - N, i + N])
+      if (j >= 0 && j < N * N && !m[j] && !walls[j]) { m[j] = 1; stack.push(j); }
+  }
+  const c = document.createElement('canvas'); c.width = c.height = N;
+  const cx = c.getContext('2d'), img = cx.createImageData(N, N);
+  for (let i = 0; i < m.length; i++) if (m[i]) img.data[i * 4 + 3] = 255;
+  cx.putImageData(img, 0, 0);
+  return c;
+}
+
+const CRAYONS = ['#E5534B', '#F2994A', '#F2C94C', '#58B368', '#4A90D9', '#9B6BCC', '#F49AC1', '#A0522D'];
+const scratch = document.createElement('canvas'); scratch.width = scratch.height = RES;
+
+function setupColor(box, item) {
+  const bw = box.clientWidth, bh = box.parentElement.clientHeight;
+  if (!item.page) {  // pick one of 4: two pictures, a letter, a blank page
+    const t = Math.floor(Math.min((bw - 16) / 2, (bh - 16) / 2, 340));
+    box.innerHTML = `<div class="choose" style="grid-template-columns:repeat(2, ${t}px)">${item.choices.map(k =>
+      `<button class="pick" data-k="${k}" style="width:${t}px;height:${t}px">${k === 'blank' ? '<span class="em">✏️</span>' : ''}</button>`).join('')}</div>`;
+    box.querySelectorAll('.pick').forEach(b => {
+      if (b.dataset.k !== 'blank') b.append(drawPage(b.dataset.k));
+      b.onclick = () => { item.page = b.dataset.k; item.prompt = pagePrompt(item.page); render(); say(item.prompt); };
+    });
+    return;
+  }
+  if (!item.layer) {  // kept on the item so rotating the screen never loses her colouring
+    item.layer = document.createElement('canvas'); item.layer.width = item.layer.height = RES;
+    item.lines = drawPage(item.page);
+    const a = item.lines.getContext('2d').getImageData(0, 0, RES, RES).data;
+    item.walls = new Uint8Array(RES * RES).map((_, i) => a[i * 4 + 3] > 100);
+    item.crayon = CRAYONS[0];
+  }
+  // Paper plus 8 big crayons: below the paper when upright, beside it when the screen is wide.
+  const wide = bw > bh * 1.2, cols = wide ? 2 : bw >= 700 ? 8 : 4, rows = 8 / cols;
+  const sw = Math.floor(Math.min(90, wide ? (bh - 30) / 4 : (bw - (cols - 1) * 10) / cols));
+  const S = Math.floor(wide ? Math.min(bh, bw - cols * (sw + 10) - 16) : Math.min(bw, bh - rows * (sw + 10) - 12));
+  box.style.flexDirection = wide ? 'row' : 'column';
+  box.innerHTML = `<div class="paper" style="width:${S}px;height:${S}px"></div><div class="palette" style="grid-template-columns:repeat(${cols}, ${sw}px)">${
+    CRAYONS.map(c => `<button class="crayon ${c === item.crayon ? 'sel' : ''}" data-c="${c}" style="background:${c};width:${sw}px;height:${sw}px"></button>`).join('')}</div>`;
+  const paper = box.querySelector('.paper');
+  paper.append(item.layer, item.lines);
+  box.querySelectorAll('.crayon').forEach(b => b.onclick = () => {
+    item.crayon = b.dataset.c; box.querySelectorAll('.crayon').forEach(o => o.classList.toggle('sel', o === b));
+  });
+  const lx = item.layer.getContext('2d'), sx = scratch.getContext('2d');
+  let mask = null, last = null;
+  const at = e => { const r = paper.getBoundingClientRect(), k = v => Math.max(0, Math.min(RES - 1, v));
+    return [k((e.clientX - r.left) / r.width * RES), k((e.clientY - r.top) / r.height * RES)]; };
+  const paint = (a, b) => {  // stroke on scratch, trim to the shape, copy onto the picture (only the small box around the stroke)
+    const x0 = Math.max(0, Math.min(a[0], b[0]) - 30 | 0), y0 = Math.max(0, Math.min(a[1], b[1]) - 30 | 0);
+    const w = Math.min(RES - x0, Math.abs(a[0] - b[0]) + 60 | 0), h = Math.min(RES - y0, Math.abs(a[1] - b[1]) + 60 | 0);
+    sx.clearRect(x0, y0, w, h);
+    sx.strokeStyle = item.crayon; sx.lineWidth = 36; sx.lineCap = 'round';
+    sx.beginPath(); sx.moveTo(a[0], a[1]); sx.lineTo(b[0] + 0.01, b[1]); sx.stroke();
+    sx.globalCompositeOperation = 'destination-in'; sx.drawImage(mask, x0, y0, w, h, x0, y0, w, h);
+    sx.globalCompositeOperation = 'source-over';
+    lx.drawImage(scratch, x0, y0, w, h, x0, y0, w, h);
+  };
+  paper.onpointerdown = e => {
+    if (busy) return;
+    paper.setPointerCapture(e.pointerId);
+    last = at(e); mask = regionMask(item.walls, last[0] | 0, last[1] | 0);
+    if (mask) paint(last, last);
+  };
+  paper.onpointermove = e => { if (!mask) return; const p = at(e); paint(last, p); last = p; };
+  paper.onpointerup = paper.onpointercancel = () => { mask = null; };
 }
 
 function showDone() {
