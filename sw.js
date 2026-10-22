@@ -10,9 +10,10 @@ self.addEventListener('activate', e => {
     .then(() => self.clients.claim()));
 });
 // Serve from cache instantly (works offline), and refresh the cache in the background when online.
+// waitUntil keeps the worker alive until the refreshed copy is saved.
 self.addEventListener('fetch', e => {
-  e.respondWith(caches.open(CACHE).then(c => c.match(e.request, { ignoreSearch: true }).then(hit => {
-    const fresh = fetch(e.request, { cache: 'no-cache' }).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; }).catch(() => hit);
-    return hit || fresh;
-  })));
+  const refresh = caches.open(CACHE).then(c => fetch(e.request, { cache: 'no-cache' })
+    .then(r => r.ok ? c.put(e.request, r.clone()).then(() => r) : r));
+  e.waitUntil(refresh.catch(() => {}));
+  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => hit || refresh));
 });

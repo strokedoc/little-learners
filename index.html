@@ -26,16 +26,16 @@
   .msg { font-size: clamp(24px, 6vw, 40px); max-width: 16em; line-height:1.3; }
 
   /* Home */
-  .tiles { flex:1; width:100%; max-width:760px; display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); align-content:center; }
-  .tile { background:var(--card); border-radius:28px; padding:18px 8px; display:flex; flex-direction:column; align-items:center; gap:10px;
-    box-shadow: 0 4px 0 var(--soft); font-size: clamp(20px, 5vw, 28px); min-height:150px; justify-content:center; }
-  .tile .ic { width:80px; height:80px; font-size:64px; line-height:80px; display:flex; align-items:center; justify-content:center; }
+  .tiles { flex:1; width:100%; max-width:760px; display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); align-content:center; min-height:0; overflow-y:auto; }
+  .tile { background:var(--card); border-radius:28px; padding:12px 8px; display:flex; flex-direction:column; align-items:center; gap:10px;
+    box-shadow: 0 4px 0 var(--soft); font-size: clamp(20px, 5vw, 28px); min-height:120px; justify-content:center; }
+  .tile .ic { width:60px; height:60px; font-size:52px; line-height:60px; display:flex; align-items:center; justify-content:center; }
   .tile:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--soft); }
   .gear { position:fixed; right:max(12px, env(safe-area-inset-right)); bottom:max(12px, env(safe-area-inset-bottom)); width:48px; height:48px; font-size:22px; opacity:.35; }
 
   /* Game */
   .bar { width:100%; max-width:760px; display:flex; align-items:center; justify-content:space-between; }
-  .home { width:72px; height:72px; font-size:40px; background:var(--card); border-radius:50%; box-shadow:0 3px 0 var(--soft); }
+  .home { width:90px; height:90px; font-size:40px; background:var(--card); border-radius:50%; box-shadow:0 3px 0 var(--soft); }
   .dots { display:flex; gap:10px; }
   .dot { width:16px; height:16px; border-radius:50%; background:var(--soft); }
   .dot.on { background:var(--accent); }
@@ -51,14 +51,14 @@
   .opt.no { opacity:.35; }
   .opt.yes, .opt.hint { box-shadow: 0 0 0 6px var(--accent); }
   .opt.yes { transform: scale(1.08); }
-  .scene { position:relative; width:100%; height:100%; min-height:320px; border-radius:24px; overflow:hidden;
+  .scene { position:relative; width:100%; height:100%; border-radius:24px; overflow:hidden;
     background: linear-gradient(#D6ECF8 0 45%, #D4EBC0 45%); }
-  .scene .opt { position:absolute; width:auto; height:auto; padding:6px; background:none; box-shadow:none; border-radius:50%;
+  .scene .opt { position:absolute; width:auto; height:auto; min-width:90px; min-height:90px; padding:6px; background:none; box-shadow:none; border-radius:50%;
     transform:translate(-50%, -50%); font-size: clamp(40px, 11vw, 64px); line-height:1; }
   .scene .opt.yes { transform:translate(-50%, -50%) scale(1.2); }
   .scene .opt.found { background:rgba(255,255,255,.7); box-shadow:0 0 0 4px var(--accent); }
   .glyph { font-size: clamp(64px, 18vw, 120px); color:#9B6BCC; font-weight:800; line-height:1; }
-  .tile .glyph { font-size:66px; }
+  .tile .glyph { font-size:56px; }
   .puzzle { width:100%; display:flex; flex-direction:column; align-items:center; gap:18px; }
   .board { position:relative; background:var(--card); border-radius:16px; box-shadow:0 4px 0 var(--soft); }
   .board img { display:block; width:100%; height:100%; opacity:.18; border-radius:16px; }
@@ -66,7 +66,7 @@
   .piece { background-color:#fff; border-radius:10px; box-shadow:0 3px 0 var(--soft); touch-action:none; }
   .piece.drag { position:fixed; z-index:5; box-shadow:0 8px 18px rgba(0,0,0,.15); }
   .piece.placed { position:absolute; border-radius:0; box-shadow:none; }
-  .trace { width: min(100%, 58dvh, 520px); aspect-ratio:1; background:var(--card); border-radius:28px; box-shadow:0 4px 0 var(--soft); touch-action:none; }
+  .trace { background:var(--card); border-radius:28px; box-shadow:0 4px 0 var(--soft); touch-action:none; }
   .count .opt { width: clamp(90px, 22vw, 150px); height: clamp(90px, 22vw, 150px); position:relative; }
   .count .opt.done .em { opacity:.3; }
   .count .opt .n { position:absolute; font-size: clamp(36px, 9vw, 60px); font-weight:700; color:var(--accent); }
@@ -81,6 +81,14 @@
   .wide.alt { background:var(--soft); color:var(--ink); }
   .note { font-size:15px; opacity:.75; line-height:1.4; }
   .grown { font-size:16px; opacity:.5; padding:12px; }
+  /* Phone held sideways: put the question up beside Home so the game gets the height. */
+  @media (max-height: 500px) {
+    #app { position:relative; }
+    .dots { display:none; }
+    .prompt { position:absolute; top:max(16px, env(safe-area-inset-top)); left:50%; transform:translateX(-50%); margin:0; max-width:calc(100% - 240px); white-space:nowrap; }
+    .opts { margin-top:12px; }
+    .scene .opt { min-width:80px; min-height:80px; }
+  }
 </style>
 </head>
 <body>
@@ -103,10 +111,11 @@ const sample = (a, n) => shuffle(a).slice(0, n);
 const pick = a => a[Math.random() * a.length | 0];
 const cap = s => s[0].toUpperCase() + s.slice(1);
 
-function say(text) {
+// queue = true lets counting finish "one, two, three" instead of cutting each number off.
+function say(text, queue) {
   if (!settings.sound || !('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
+  if (!queue && speechSynthesis.speaking) speechSynthesis.cancel();  // cancelling when idle can drop the next line on older iOS
+  const u = new SpeechSynthesisUtterance(text.replace(/\bA\b/g, 'ay'));  // a lone "A" is otherwise read as "uh"
   u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.1;
   speechSynthesis.speak(u);
 }
@@ -165,40 +174,39 @@ const WORDS = { A: ['apple', '🍎'], B: ['ball', '⚽'], C: ['cat', '🐱'], D:
   S: ['sun', '☀️'], T: ['tree', '🌳'], U: ['umbrella', '☂️'], V: ['violin', '🎻'], W: ['whale', '🐳'], X: ['fox', '🦊'],
   Y: ['yo-yo', '🪀'], Z: ['zebra', '🦓'] };
 
-const spokenName = L => L === 'A' ? 'ay' : L;  // a lone "A" is read aloud as "uh"
-const letterPraise = L => L === 'X' ? 'X! Fox ends with X!' : `${spokenName(L)}! ${spokenName(L)} is for ${WORDS[L][0]}!`;
+const letterPraise = L => L === 'X' ? 'X! Fox ends with X!' : `${L}! ${L} is for ${WORDS[L][0]}!`;
 
 // Pitched at her level: colours/shapes/counting are stretch versions; most games build the alphabet.
 // Each make() returns one question: id (to avoid repeats), prompt, praise, a real-world "go find" line, and its options.
 const GAMES = {
   letters: { title: 'Trace', icon: '<b class="glyph">A</b>', trace: true, make() {
-    const L = pick(Object.keys(LETTERS)), s = spokenName(L);
-    return { id: L, strokes: LETTERS[L], prompt: `Trace the letter ${s}.`, praise: letterPraise(L), reveal: `${L} ${WORDS[L][1]}`,
-      find: `Can you draw a big ${s} in the air with your finger?` };
+    const L = pick(Object.keys(LETTERS));
+    return { id: L, strokes: LETTERS[L], prompt: `Trace the letter ${L}.`, praise: letterPraise(L), reveal: `${L} ${WORDS[L][1]}`,
+      find: `Can you draw a big ${L} in the air with your finger?` };
   } },
   hunt: { title: 'Find the Letter', icon: '🔍', make() {
-    const opts = sample(Object.keys(WORDS), 3), L = opts[0], s = spokenName(L);
-    return { id: L, prompt: `Find the letter ${s}.`, praise: letterPraise(L), reveal: `${L} ${WORDS[L][1]}`,
-      find: `Can you find the letter ${s} in a book or on a sign?`,
+    const opts = sample(Object.keys(WORDS), 3), L = opts[0];
+    return { id: L, prompt: `Find the letter ${L}.`, praise: letterPraise(L), reveal: `${L} ${WORDS[L][1]}`,
+      find: `Can you find the letter ${L} in a book or on a sign?`,
       options: shuffle(opts).map(o => ({ html: `<b class="glyph">${o}</b>`, correct: o === L })) };
   } },
   puzzle: { title: 'Puzzle', icon: '🧩', puzzle: true, rounds: 3, make() {
-    const L = pick(Object.keys(WORDS).filter(l => l !== 'X')), [word, emoji] = WORDS[L], s = spokenName(L);
+    const L = pick(Object.keys(WORDS).filter(l => l !== 'X')), [word, emoji] = WORDS[L];
     return { id: L, L, emoji, prompt: 'Put the puzzle together!', praise: letterPraise(L), reveal: `${L} is for ${word}`,
-      find: `Can you say it? ${s}, ${s}, ${word}!` };
+      find: `Can you say it? ${L}, ${L}, ${word}!` };
   } },
   seek: { title: 'I Spy', icon: '👀', seek: true, make() {
     const t = pick(cur.scene.filter(o => !cur.found.includes(o.L))), [word, emoji] = WORDS[t.L];
     return { id: t.L, prompt: `Can you find the ${word}?`, reveal: `${t.L} ${emoji}`, find: 'Can you spy something blue in this room?',
-      praise: t.L === 'X' ? 'You found the fox!' : `You found the ${word}! ${cap(word)} starts with ${spokenName(t.L)}.`,
-      options: cur.scene.map(o => ({ html: WORDS[o.L][1], name: WORDS[o.L][0], correct: o === t, x: o.x, y: o.y, found: cur.found.includes(o.L) })) };
+      praise: t.L === 'X' ? 'You found the fox!' : `You found the ${word}! ${cap(word)} starts with ${t.L}.`,
+      options: cur.scene.map(o => ({ html: WORDS[o.L][1], name: WORDS[o.L][0], correct: o === t, found: cur.found.includes(o.L) })) };
   } },
   colorshape: { title: 'Colors & Shapes', icon: svg('star', '#F2C94C'), make() {
     const shapes = Object.keys(SHAPES), c = pick(COLORS), s = pick(shapes);
     const not = (arr, x) => pick(arr.filter(y => y !== x));
     // Distractors share the colour or the shape, so she has to check both.
     const opts = [[c, s], [not(COLORS, c), s], [c, not(shapes, s)], [not(COLORS, c), not(shapes, s)]];
-    return { id: c[0] + s, prompt: `Find the ${c[0]} ${s}.`, praise: `Yes! A ${c[0]} ${s}!`, find: `Can you find something ${c[0]} near you?`,
+    return { id: c[0] + s, prompt: `Find the ${c[0]} ${s}.`, praise: `Yes! The ${c[0]} ${s}!`, find: `Can you find something ${c[0]} near you?`,
       options: shuffle(opts).map(([oc, os]) => ({ html: svg(os, oc[1]), correct: oc === c && os === s })) };
   } },
   counting: { title: 'Counting', icon: '🖐️', count: true, make() {
@@ -216,15 +224,19 @@ const GAMES = {
 let screen = 'home';
 function save() { store.set('session', session); }
 function timeUp() { return session.used >= settings.minutes * 60; }
+let lastTick = Date.now();
 setInterval(() => {
+  const now = Date.now(), dt = Math.min(now - lastTick, 15000) / 1000; lastTick = now;  // capped so app suspensions don't count
   if (document.hidden || session.locked) return;
-  session.used += 5; session.last = Date.now(); save();
-  // Never cut a question off mid-way: lock between questions, or right away if on a menu.
-  if (timeUp() && (screen === 'home' || screen === 'done')) showRest();
+  session.used += dt; session.last = now;
+  // Lock (and save) right away; the rest screen shows between questions so nothing is cut off mid-way.
+  if (timeUp()) { session.locked = true; if (screen === 'home' || screen === 'done') showRest(); }
+  save();
 }, 5000);
 
 /* ---------- screens ---------- */
 function showHome() {
+  clearTimeout(pending);
   if (session.locked || timeUp()) return showRest();
   screen = 'home';
   app.innerHTML = `<h1>Let's play!</h1><div class="tiles">${Object.entries(GAMES).map(([k, g]) =>
@@ -234,38 +246,49 @@ function showHome() {
   app.querySelector('.gear').onclick = () => showGate(showSettings);
 }
 
-let cur = null, busy = false;
+let cur = null, busy = false, pending = 0;
+const later = (fn, ms) => { clearTimeout(pending); pending = setTimeout(fn, ms); };  // one pending step; Home cancels it
 function startGame(key) { cur = { key, q: 0, prev: null }; nextQ(); }
 
 function nextQ() {
   busy = false;
-  if (timeUp()) return showRest();
+  if (session.locked || timeUp()) return showRest();
   const g = GAMES[cur.key], rounds = g.rounds || 5;
   if (cur.q >= rounds) return showDone();
   if (g.seek && !cur.scene) { cur.scene = makeScene(); cur.found = []; }  // one scene for the whole round
   let item; do { item = g.make(); } while (item.id === cur.prev);
-  cur.q++; cur.prev = item.id; cur.item = item; cur.misses = 0; cur.counted = 0;
-  screen = 'game';
+  cur.q++; cur.prev = item.id; cur.item = item;
+  render();
+  say(cur.q === 1 ? `${g.title}! ${item.prompt}` : item.prompt);  // first question also names the game (she can't read the tiles)
+}
+
+// Draws the current question. Re-run on rotation so it fits the new screen (that one question restarts).
+function render() {
+  const g = GAMES[cur.key], rounds = g.rounds || 5, item = cur.item;
+  cur.misses = 0; cur.counted = 0; screen = 'game';
+  if (g.seek) layoutScene(cur.scene);
   const dots = Array.from({ length: rounds }, (_, i) => `<span class="dot ${i < cur.q ? 'on' : ''}"></span>`).join('');
   const opts = g.seek ? `<div class="scene">${item.options.map((o, i) =>
-      `<button class="opt ${o.found ? 'found' : ''}" data-i="${i}" style="left:${o.x}%;top:${o.y}%">${o.html}</button>`).join('')}</div>`
+      `<button class="opt ${o.found ? 'found' : ''}" data-i="${i}" style="left:${cur.scene[i].x}%;top:${cur.scene[i].y}%">${o.html}</button>`).join('')}</div>`
     : g.puzzle ? '<div class="puzzle"></div>'
     : g.trace ? '<canvas class="trace"></canvas>'
     : g.count ? Array.from({ length: item.n }, () => `<button class="opt"><span class="em">${item.thing}</span></button>`).join('')
     : item.options.map((o, i) => `<button class="opt" data-i="${i}">${o.html}</button>`).join('');
-  app.innerHTML = `<div class="bar"><button class="home" aria-label="Home">🏠</button><div class="dots">${dots}</div><span style="width:72px"></span></div>
+  app.innerHTML = `<div class="bar"><button class="home" aria-label="Home">🏠</button><div class="dots">${dots}</div><span style="width:90px"></span></div>
     <button class="prompt">${item.prompt}</button><div class="opts ${g.count ? 'count' : ''}">${opts}</div>`;
   app.querySelector('.home').onclick = showHome;
   app.querySelector('.prompt').onclick = () => say(item.prompt);
   if (g.trace) setupTrace(app.querySelector('.trace'), item);
   if (g.puzzle) setupPuzzle(app.querySelector('.puzzle'), item);
   app.querySelectorAll('.opt').forEach(b => b.onclick = () => g.count ? countTap(b) : answer(b));
-  say(item.prompt);
 }
+let resizeT;
+addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (screen === 'game' && !busy) render(); }, 300); });
 
 // Tracing is forgiving on purpose: any order or direction, and a stroke counts once the finger has covered most of it.
 function setupTrace(cv, item) {
-  const S = cv.clientWidth, dpr = window.devicePixelRatio || 1;
+  const S = Math.min(cv.parentElement.clientWidth, cv.parentElement.clientHeight, 520), dpr = window.devicePixelRatio || 1;
+  cv.style.width = cv.style.height = S + 'px';
   cv.width = cv.height = S * dpr;
   const ctx = cv.getContext('2d');
   ctx.scale(dpr * S / 100, dpr * S / 100); ctx.lineCap = ctx.lineJoin = 'round';
@@ -303,7 +326,7 @@ function setupTrace(cv, item) {
     if (strokes.every(s => s.done)) {
       busy = true; trail = null; ink.length = 0; draw();
       app.querySelector('.prompt').textContent = item.reveal; say(item.praise);
-      setTimeout(nextQ, 3200);
+      later(nextQ, 3200);
     }
   };
   cv.onpointerdown = e => { if (busy) return; cv.setPointerCapture(e.pointerId); trail = []; ink.push(trail); move(at(e)); };
@@ -319,7 +342,7 @@ function answer(b) {
     busy = true; b.classList.add('yes'); say(item.praise);
     if (item.reveal) app.querySelector('.prompt').textContent = item.reveal;
     if (cur.found) cur.found.push(item.id);
-    setTimeout(nextQ, 2200);
+    later(nextQ, 2200);
   } else {
     const name = item.options[b.dataset.i].name;  // in I Spy, a wrong tap still teaches a word
     b.classList.add('no'); say(name ? `That's the ${name}.` : 'Try again.');
@@ -333,17 +356,22 @@ function countTap(b) {
   b.insertAdjacentHTML('beforeend', `<span class="n">${++cur.counted}</span>`);
   if (cur.counted === cur.item.n) {
     busy = true; app.querySelector('.prompt').textContent = cur.item.reveal;  // link the count to the written number
-    setTimeout(() => say(cur.item.praise), 500); setTimeout(nextQ, 3200);
+    say(cur.item.praise, true); later(nextQ, 3500);
   }
-  else say(String(cur.counted));
+  else say(String(cur.counted), true);
 }
 
-// 14 alphabet pictures scattered over a 4×5 grid (with a little jitter) so nothing overlaps.
-function makeScene() {
-  const cells = shuffle(Array.from({ length: 20 }, (_, i) => i));
-  return sample(Object.keys(WORDS), 14).map((L, k) => ({ L,
-    x: (cells[k] % 4 + 0.5 + (Math.random() - 0.5) * 0.4) * 25,
-    y: ((cells[k] / 4 | 0) + 0.5 + (Math.random() - 0.5) * 0.4) * 20 }));
+// 12 alphabet pictures on a 15-cell grid (3×5 upright, 5×3 sideways) with a little jitter, so big tap areas never overlap.
+function makeScene() { return sample(Object.keys(WORDS), 12).map(L => ({ L })); }
+function layoutScene(scene) {
+  const wide = innerWidth > innerHeight;
+  if (scene.wide === wide) return;  // keep positions steady for the whole round unless the screen rotates
+  scene.wide = wide;
+  const cols = wide ? 5 : 3, rows = 15 / cols, cells = shuffle([...Array(15).keys()]);
+  scene.forEach((o, k) => {
+    o.x = (cells[k] % cols + 0.5 + (Math.random() - 0.5) * 0.2) * 100 / cols;
+    o.y = ((cells[k] / cols | 0) + 0.5 + (Math.random() - 0.5) * 0.2) * 100 / rows;
+  });
 }
 
 // The picture is a letter plus its word-picture, cut into 3×2 pieces. A faint copy on the board shows where each goes.
@@ -353,8 +381,12 @@ function setupPuzzle(box, item) {
   x.fillStyle = '#fff'; x.fillRect(0, 0, 600, 400); x.textAlign = 'center'; x.textBaseline = 'middle';
   x.fillStyle = '#9B6BCC'; x.font = '800 300px ui-rounded, system-ui, sans-serif'; x.fillText(item.L, 160, 215);
   x.font = '230px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; x.fillText(item.emoji, 440, 215);
-  const img = c.toDataURL(), W = Math.min(box.clientWidth, 480) - 20, s = W / 3;  // -20 leaves room for 3 pieces + gaps per tray row
-  box.innerHTML = `<div class="board" style="width:${W}px;height:${2 * s}px"><img src="${img}" alt=""></div><div class="tray" style="min-height:${2 * s + 10}px"></div>`;  // fixed height so the board never jumps
+  // Piece size s fits both width and height: board (3s × 2s) and tray (3 per row) stacked, or side by side on wide short screens.
+  const img = c.toDataURL(), bw = box.clientWidth, bh = box.parentElement.clientHeight, wide = bw > bh * 1.3;
+  const s = Math.floor(Math.min(wide ? (bw - 48) / 6 : (bw - 20) / 3, wide ? (bh - 10) / 2 : (bh - 38) / 4, 150)), W = 3 * s;
+  box.style.flexDirection = wide ? 'row' : 'column';
+  box.innerHTML = `<div class="board" style="width:${W}px;height:${2 * s}px"><img src="${img}" alt=""></div>
+    <div class="tray" style="width:${W + 20}px;min-height:${2 * s + 10}px"></div>`;  // fixed size so the board never jumps
   const board = box.querySelector('.board'), tray = box.querySelector('.tray');
   let left = 6;
   shuffle([0, 1, 2, 3, 4, 5]).forEach(i => {
@@ -377,8 +409,12 @@ function setupPuzzle(box, item) {
       if (Math.hypot(r.left - (b.left + col * s), r.top - (b.top + row * s)) < s * 0.45) {  // close enough: snap in
         p.dataset.placed = 1; p.classList.add('placed'); board.appendChild(p);
         p.style.left = col * s + 'px'; p.style.top = row * s + 'px';
-        if (!--left) { busy = true; app.querySelector('.prompt').textContent = item.reveal; say(item.praise); setTimeout(nextQ, 3500); }
-      } else { p.style.left = p.style.top = ''; }  // gently back to the tray, no "wrong" sound
+        if (!--left) { busy = true; app.querySelector('.prompt').textContent = item.reveal; say(item.praise); later(nextQ, 3500); }
+      } else {  // gently back to the tray; a soft word only if she was trying on the board
+        const cx = r.left + s / 2, cy = r.top + s / 2;
+        if (cx > b.left && cx < b.right && cy > b.top && cy < b.bottom) say('Try again.');
+        p.style.left = p.style.top = '';
+      }
     };
   });
 }
@@ -403,15 +439,14 @@ function showRest() {
 }
 
 /* ---------- parent gate + settings (rule 7) ---------- */
-function showGate(onPass) {
-  const back = screen === 'rest' ? showRest : showHome;
+function showGate(onPass, back = screen === 'rest' ? showRest : showHome, step = 0) {
   screen = 'gate';
-  const a = 3 + (Math.random() * 7 | 0), b = 3 + (Math.random() * 7 | 0), sum = a + b;
+  const a = 6 + (Math.random() * 9 | 0), b = 6 + (Math.random() * 9 | 0), sum = a + b;
   const choices = shuffle([sum, sum + 1, sum - 2, sum + 3]);
   app.innerHTML = `<div class="center"><div class="panel"><h2>For grown-ups</h2>
-    <p>What is ${a} + ${b}?</p><div class="row">${choices.map(c => `<button class="chip" data-v="${c}">${c}</button>`).join('')}</div>
+    <p>${step + 1} of 2: What is ${a} + ${b}?</p><div class="row">${choices.map(c => `<button class="chip" data-v="${c}">${c}</button>`).join('')}</div>
     <button class="wide alt">Back</button></div></div>`;
-  app.querySelectorAll('.chip').forEach(c => c.onclick = () => (+c.dataset.v === sum ? onPass() : back()));
+  app.querySelectorAll('.chip').forEach(c => c.onclick = () => (+c.dataset.v !== sum ? back() : step ? onPass() : showGate(onPass, back, 1)));
   app.querySelector('.wide').onclick = back;
 }
 

@@ -8,7 +8,7 @@ Every feature must pass all of these.
 - **Session timer** (parent sets 10 / 15 / 20 min, default 15). When it runs out, the child finishes the
   current question, then a calm "All done — time to play!" screen appears.
 - That rest screen **stays locked** (even after closing/reopening the app) until a parent unlocks it.
-- Each game is a **short round of 5 questions**, then stops. No autoplay, no "next game" button, no
+- Each game is a **short round of 5 questions** (3 for puzzles, which take longer), then stops. No autoplay, no "next game" button, no
   infinite mode. Going back to the menu needs a tap.
 
 ## 2. No hooks
@@ -39,7 +39,7 @@ Every feature must pass all of these.
 - The child's name is not in the app (it's on a public website).
 
 ## 7. Parent in control
-- Settings and unlocking sit behind a **parent gate** (a simple adult sum a 3-year-old can't do).
+- Settings and unlocking sit behind a **parent gate** (two adult sums in a row, so lucky guessing rarely works).
 - Each round ends with a **"go find it" prompt** (e.g. "Can you find something red near you?") to move
   the learning back into the real world and invite an adult to join.
 
