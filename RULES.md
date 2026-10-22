@@ -31,7 +31,7 @@ Every feature must pass all of these.
   loves drawing and puzzles): most games build the alphabet — tracing, letter hunt, letter puzzles, and
   I Spy where every object is an alphabet word. Colours & shapes are combined ("the blue star") and
   counting goes to 10, so they stretch her rather than bore her. Tracing is forgiving (any order or direction).
-- **Colouring** (for travel; crayons on paper stay better at home): pre-drawn pages tied to a letter, plus one
+- **Colouring** (for travel; crayons on paper stay better at home): a picture for every letter A–Z (29 pages), letter pages, plus one
   blank page. The crayon stays inside the shape she started in (no tap-to-fill). Two pages per round, nothing
   is saved or collected, and a finished page ends with "Show a grown-up!". If time runs out mid-picture she
   gets a one-minute warning, then rest. No film characters (copyright, and the site is public).

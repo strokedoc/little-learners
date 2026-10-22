@@ -446,13 +446,14 @@ function setupPuzzle(box, item) {
 }
 
 /* ---------- colouring ---------- */
-// Line art on a 600×600 grid. Every picture page also carries its letter as a small bubble letter in the corner.
+// Line art on a 600×600 grid, at least one picture for every letter A–Z. Every picture page also carries its letter as a small bubble letter in the corner.
 const RES = 800;  // drawing resolution (pages are scaled up from the 600 grid)
 const C = (x, cx, cy, r) => { x.beginPath(); x.arc(cx, cy, r, 0, 7); x.stroke(); };
 const E = (x, cx, cy, rx, ry, rot = 0) => { x.beginPath(); x.ellipse(cx, cy, rx, ry, rot, 0, 7); x.stroke(); };
 const P = (x, pts, close = true) => { x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); if (close) x.closePath(); x.stroke(); };
 const DOT = (x, cx, cy, r) => { x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); };
 const SMILE = (x, cx, cy, r) => { x.beginPath(); x.arc(cx, cy, r, 0.3, Math.PI - 0.3); x.stroke(); };
+const STAR = (x, cx, cy, r) => P(x, Array.from({ length: 10 }, (_, i) => { const a = i * Math.PI / 5 - Math.PI / 2, k = i % 2 ? r * 0.45 : r; return [cx + k * Math.cos(a), cy + k * Math.sin(a)]; }));
 const PAGES = {
   apple: { L: 'A', draw(x) {
     x.beginPath(); x.moveTo(340, 210); x.bezierCurveTo(270, 150, 150, 190, 160, 330); x.bezierCurveTo(170, 460, 280, 540, 340, 500);
@@ -501,7 +502,89 @@ const PAGES = {
     for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6, p = (r, d) => [340 + r * Math.cos(a + d), 330 + r * Math.sin(a + d)]; P(x, [p(140, -0.12), p(220, 0), p(140, 0.12)]); }
     DOT(x, 300, 300, 10); DOT(x, 380, 300, 10); SMILE(x, 340, 335, 50);
   } },
-  tree: { L: 'T', draw(x) { x.strokeRect(300, 380, 80, 190); C(x, 250, 300, 90); C(x, 430, 300, 90); C(x, 340, 220, 110); } }
+  tree: { L: 'T', draw(x) { x.strokeRect(300, 380, 80, 190); C(x, 250, 300, 90); C(x, 430, 300, 90); C(x, 340, 220, 110); } },
+  dog: { L: 'D', draw(x) {
+    E(x, 205, 340, 45, 100, 0.2); E(x, 475, 340, 45, 100, -0.2); C(x, 340, 330, 140);
+    DOT(x, 290, 300, 10); DOT(x, 390, 300, 10); E(x, 340, 395, 60, 45); E(x, 340, 375, 18, 12); SMILE(x, 340, 395, 25);
+  } },
+  elephant: { L: 'E', draw(x) {
+    x.save(); x.beginPath(); x.rect(0, 0, 600, 600); x.arc(220, 300, 90, 0, 7); x.clip('evenodd');  // body and legs hide behind the head
+    x.strokeRect(255, 440, 55, 125); x.strokeRect(430, 440, 55, 125); E(x, 370, 380, 170, 120);
+    P(x, [[150, 320], [128, 420], [140, 505], [172, 505], [166, 425], [188, 345]]); x.restore();
+    C(x, 220, 300, 90); E(x, 245, 300, 45, 65);
+    DOT(x, 195, 280, 9); P(x, [[538, 370], [575, 425]], false);
+  } },
+  grapes: { L: 'G', draw(x) {
+    P(x, [[362, 222], [380, 150]], false); E(x, 425, 168, 45, 20, -0.3);
+    [[250, 260], [325, 260], [400, 260], [475, 260], [287, 325], [362, 325], [437, 325], [325, 390], [400, 390], [362, 455]].forEach(([a, b]) => C(x, a, b, 38));
+  } },
+  'ice cream': { L: 'I', draw(x) {
+    P(x, [[265, 320], [415, 320], [340, 565]]); P(x, [[290, 380], [395, 380]], false); P(x, [[305, 440], [378, 440]], false);
+    C(x, 340, 260, 85); C(x, 340, 158, 22);
+  } },
+  juice: { L: 'J', draw(x) {
+    x.strokeRect(260, 230, 160, 320); P(x, [[260, 230], [290, 190], [390, 190], [420, 230]]);
+    P(x, [[372, 190], [372, 120], [440, 95], [446, 110], [388, 130], [388, 190]]); C(x, 340, 390, 55);
+  } },
+  key: { L: 'K', draw(x) {
+    x.strokeRect(300, 310, 250, 40); x.strokeRect(470, 350, 25, 55); x.strokeRect(515, 350, 25, 40);
+    C(x, 220, 330, 85); C(x, 220, 330, 30);
+  } },
+  lion: { L: 'L', draw(x) {
+    for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; C(x, 340 + 150 * Math.cos(a), 345 + 150 * Math.sin(a), 48); }
+    C(x, 340, 345, 125); DOT(x, 295, 315, 10); DOT(x, 385, 315, 10);
+    P(x, [[322, 360], [358, 360], [340, 382]]); x.beginPath(); x.arc(320, 395, 20, 0, Math.PI); x.stroke(); x.beginPath(); x.arc(360, 395, 20, 0, Math.PI); x.stroke();
+  } },
+  moon: { L: 'M', draw(x) {  // crescent: outer circle minus an offset circle
+    x.beginPath(); x.arc(330, 340, 200, 0.5436, 4.812); x.arc(410, 300, 170, 4.351, 1.005, true); x.closePath(); x.stroke();
+    STAR(x, 480, 230, 40); STAR(x, 540, 400, 28); DOT(x, 250, 380, 8); SMILE(x, 235, 330, 25);
+  } },
+  nest: { L: 'N', draw(x) {
+    E(x, 280, 340, 42, 58, -0.2); E(x, 400, 335, 42, 58, 0.2); E(x, 340, 320, 42, 58);
+    x.beginPath(); x.moveTo(165, 370); x.quadraticCurveTo(340, 640, 515, 370); x.closePath(); x.stroke();
+    P(x, [[200, 410], [300, 440]], false); P(x, [[380, 445], [480, 410]], false); P(x, [[260, 470], [420, 470]], false);
+  } },
+  orange: { L: 'O', draw(x) {  // an orange slice
+    C(x, 340, 350, 190); C(x, 340, 350, 155); C(x, 340, 350, 22);
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; P(x, [[340 + 22 * Math.cos(a), 350 + 22 * Math.sin(a)], [340 + 155 * Math.cos(a), 350 + 155 * Math.sin(a)]], false); }
+  } },
+  queen: { L: 'Q', draw(x) {
+    P(x, [[300, 330], [380, 330], [520, 575], [160, 575]]); P(x, [[270, 330], [410, 330], [390, 370], [290, 370]]); C(x, 340, 250, 85);
+    P(x, [[268, 200], [255, 90], [300, 140], [340, 70], [380, 140], [425, 90], [412, 200]]); C(x, 340, 140, 14);
+    DOT(x, 310, 245, 8); DOT(x, 370, 245, 8); SMILE(x, 340, 268, 30);
+  } },
+  rainbow: { L: 'R', draw(x) {
+    [230, 190, 150, 110].forEach(r => { x.beginPath(); x.arc(340, 470, r, Math.PI, 2 * Math.PI); x.stroke(); });
+    P(x, [[110, 470], [570, 470]], false); C(x, 130, 480, 45); C(x, 185, 495, 38); C(x, 550, 480, 45); C(x, 495, 495, 38);
+  } },
+  umbrella: { L: 'U', draw(x) {
+    x.beginPath(); x.arc(340, 330, 210, Math.PI, 2 * Math.PI); x.closePath(); x.stroke();
+    x.beginPath(); x.moveTo(340, 120); x.quadraticCurveTo(250, 200, 235, 330); x.stroke();
+    x.beginPath(); x.moveTo(340, 120); x.quadraticCurveTo(430, 200, 445, 330); x.stroke();
+    P(x, [[340, 120], [340, 330]], false); P(x, [[340, 330], [340, 520]], false); x.beginPath(); x.arc(310, 520, 30, 0, Math.PI); x.stroke();
+  } },
+  violin: { L: 'V', draw(x) {
+    x.strokeRect(325, 95, 30, 120); C(x, 340, 90, 22); E(x, 340, 270, 90, 95); E(x, 340, 440, 115, 115);
+    x.strokeRect(310, 525, 60, 18); [330, 350].forEach(a => P(x, [[a, 110], [a, 525]], false));
+  } },
+  whale: { L: 'W', draw(x) {
+    P(x, [[495, 380], [575, 295], [575, 465]]); E(x, 320, 380, 200, 120);
+    x.beginPath(); x.moveTo(140, 420); x.quadraticCurveTo(320, 520, 500, 420); x.stroke();
+    DOT(x, 215, 365, 10); P(x, [[320, 260], [320, 215]], false); C(x, 320, 200, 18); C(x, 275, 190, 14); C(x, 365, 190, 14);
+  } },
+  xylophone: { L: 'X', draw(x) {
+    for (let i = 0; i < 5; i++) { x.strokeRect(185 + i * 75, 210 + i * 18, 60, 270 - i * 36); DOT(x, 215 + i * 75, 235 + i * 18, 7); }
+    P(x, [[170, 500], [560, 450]], false); P(x, [[200, 140], [300, 190]], false); C(x, 190, 135, 20); P(x, [[480, 150], [400, 195]], false); C(x, 490, 145, 20);
+  } },
+  'yo-yo': { L: 'Y', draw(x) { C(x, 330, 370, 160); C(x, 330, 370, 70); C(x, 330, 370, 15); P(x, [[330, 355], [430, 130]], false); C(x, 440, 115, 18); } },
+  zebra: { L: 'Z', draw(x) {
+    P(x, [[255, 230], [235, 120], [300, 195]]); P(x, [[425, 230], [445, 120], [380, 195]]);
+    x.beginPath(); x.ellipse(340, 340, 110, 165, 0, 0, 7); x.stroke();
+    x.save(); x.beginPath(); x.ellipse(340, 340, 110, 165, 0, 0, 7); x.clip();  // stripes only inside the head
+    [200, 245, 290, 335, 380].forEach(y => { P(x, [[220, y], [318, y + 30]], false); P(x, [[460, y], [362, y + 30]], false); });
+    x.restore();
+    E(x, 340, 470, 90, 62); DOT(x, 310, 475, 9); DOT(x, 370, 475, 9); DOT(x, 290, 330, 10); DOT(x, 390, 330, 10);
+  } }
 };
 
 // Bubble letter from the tracing strokes: a thick dark line with its middle cut out leaves a hollow letter to colour in.
