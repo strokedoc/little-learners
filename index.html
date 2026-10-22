@@ -171,6 +171,9 @@ function say(text, queue) {
 /* ---------- content ---------- */
 const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const COLORS = [['red', '#E5534B'], ['blue', '#4A90D9'], ['yellow', '#F2C94C'], ['green', '#58B368'], ['orange', '#F2994A'], ['purple', '#9B6BCC']];
+// Regular polygon with n corners (rot = angle of the first corner, degrees).
+const ngon = (n, rot = -90) => `<polygon points="${Array.from({ length: n }, (_, i) => { const a = (rot + i * 360 / n) * Math.PI / 180;
+  return `${(50 + 46 * Math.cos(a)).toFixed(1)},${(50 + 46 * Math.sin(a)).toFixed(1)}`; }).join(' ')}"/>`;
 const SHAPES = {
   circle: '<circle cx="50" cy="50" r="42"/>',
   square: '<rect x="10" y="10" width="80" height="80" rx="6"/>',
@@ -179,8 +182,17 @@ const SHAPES = {
   heart: '<path d="M50 88C20 66 6 50 6 32 6 18 17 8 30 8c10 0 16 6 20 14 4-8 10-14 20-14 13 0 24 10 24 24 0 18-14 34-44 56z"/>',
   diamond: '<polygon points="50,4 90,50 50,96 10,50"/>',
   oval: '<ellipse cx="50" cy="50" rx="44" ry="30"/>',
-  rectangle: '<rect x="4" y="24" width="92" height="52" rx="6"/>'
+  rectangle: '<rect x="4" y="24" width="92" height="52" rx="6"/>',
+  pentagon: ngon(5), hexagon: ngon(6, 0), octagon: ngon(8, 22.5),
+  trapezoid: '<polygon points="28,22 72,22 96,80 4,80"/>',
+  parallelogram: '<polygon points="30,24 96,24 70,76 4,76"/>',
+  semicircle: '<path d="M4 74 A46 46 0 0 1 96 74 Z"/>',
+  crescent: '<path d="M62 8 A44 44 0 1 0 62 92 A48 48 0 0 1 62 8 Z"/>'
 };
+const SIDES = { triangle: 3, square: 4, rectangle: 4, diamond: 4, trapezoid: 4, parallelogram: 4, pentagon: 5, hexagon: 6, octagon: 8 };
+// Shapes that are easy to mix up; used as the wrong answers once she's ready, so she has to really look.
+const LOOKALIKES = [['pentagon', 'hexagon', 'octagon', 'circle'], ['square', 'rectangle', 'trapezoid', 'parallelogram', 'diamond'],
+  ['circle', 'oval', 'semicircle', 'crescent'], ['star', 'heart', 'triangle', 'pentagon']];
 let svgId = 0;
 // Glossy toy-like shape: the colour plus a soft highlight clipped to the shape.
 const svg = (name, fill) => { const id = 'c' + svgId++;
@@ -303,11 +315,19 @@ const GAMES = {
       options: cur.scene.map(o => ({ html: WORDS[o.L][1], name: WORDS[o.L][0], L: o.L, correct: o === t, found: cur.found.includes(o.L) })) };
   } },
   colorshape: { title: 'Colors & Shapes', icon: svg('star', '#F2C94C'), tint: '#FFF4C2', shade: '#F0DE8E', make(level) {
-    const shapes = Object.keys(SHAPES).slice(0, level === 1 ? 5 : 8), n = [4, 6, 8][level - 1];
+    const all = Object.keys(SHAPES), shapes = level === 1 ? all.slice(0, 8) : all, n = [4, 6, 8][level - 1];
+    if (level === 3 && Math.random() < 0.4) {  // count the sides; no other option has that many
+      const s = pick(['triangle', 'pentagon', 'hexagon', 'octagon']), k = SIDES[s];
+      const opts = [s, ...sample(shapes.filter(x => x !== s && SIDES[x] !== k), n - 1)];
+      return { id: 'sides' + s, prompt: `Find the shape with ${k} sides.`, praise: `Yes! A ${s} has ${k} sides!`, many: true,
+        find: 'Can you find something with 4 sides near you?', options: shuffle(opts).map(o => ({ html: svg(o, pick(COLORS)[1]), correct: o === s })) };
+    }
     const c = pick(COLORS), s = pick(shapes), key = ([oc, os]) => oc[0] + os;
-    // Distractors share the colour or the shape, so she has to check both.
-    const opts = [[c, s], [pick(COLORS.filter(x => x !== c)), s], [c, pick(shapes.filter(x => x !== s))]];
-    while (opts.length < n) { const o = [pick(COLORS), pick(shapes)]; if (!opts.some(p => key(p) === key(o))) opts.push(o); }
+    const fam = level > 1 ? (LOOKALIKES.find(f => f.includes(s)) || []).filter(x => x !== s) : [];
+    const another = () => fam.length && Math.random() < 0.6 ? pick(fam) : pick(shapes.filter(x => x !== s));
+    // Distractors share the colour or the shape (and later look alike), so she has to check both.
+    const opts = [[c, s], [pick(COLORS.filter(x => x !== c)), s], [c, another()]];
+    while (opts.length < n) { const o = [pick(COLORS), another()]; if (!opts.some(p => key(p) === key(o))) opts.push(o); }
     return { id: c[0] + s, prompt: `Find the ${c[0]} ${s}.`, praise: `Yes! The ${c[0]} ${s}!`, find: `Can you find something ${c[0]} near you?`, many: n > 4,
       options: shuffle(opts).map(([oc, os]) => ({ html: svg(os, oc[1]), correct: oc === c && os === s })) };
   } },
