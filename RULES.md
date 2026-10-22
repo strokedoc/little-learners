@@ -27,7 +27,8 @@ Every feature must pass all of these.
 
 ## 5. Made for small hands and pre-readers
 - Huge tap targets (≥ 90 px), everything is spoken aloud, no reading needed.
-- Content matched to age 3: colours, shapes, counting 1–5, animals, big vs small.
+- Content matched to age 3: colours, shapes, counting 1–5, animals, big vs small, tracing capital letters
+  (forgiving: any order or direction counts).
 
 ## 6. Safe and private
 - No ads, no purchases, no accounts, no links out, no analytics, no data leaves the device.

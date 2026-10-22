@@ -51,6 +51,7 @@
   .opt.no { opacity:.35; }
   .opt.yes, .opt.hint { box-shadow: 0 0 0 6px var(--accent); }
   .opt.yes { transform: scale(1.08); }
+  .trace { width: min(100%, 58dvh, 520px); aspect-ratio:1; background:var(--card); border-radius:28px; box-shadow:0 4px 0 var(--soft); touch-action:none; }
   .count .opt { width: clamp(90px, 22vw, 150px); height: clamp(90px, 22vw, 150px); position:relative; }
   .count .opt.done .em { opacity:.3; }
   .count .opt .n { position:absolute; font-size: clamp(36px, 9vw, 60px); font-weight:700; color:var(--accent); }
@@ -109,6 +110,46 @@ const ANIMALS = [['🐄', 'moo', 'cow'], ['🐶', 'woof', 'dog'], ['🐱', 'meow
   ['🐷', 'oink', 'pig'], ['🦁', 'roar', 'lion'], ['🐸', 'ribbit', 'frog'], ['🐔', 'cluck', 'chicken']];
 const THINGS = ['🍎', '🐟', '⭐', '🚗', '🐞', '🌸', '🍌', '🎈', '🐥', '⚽'];
 
+// Capital letters as finger strokes on a 100×100 grid. arc() makes curves; angles in degrees, 0 = right, 90 = down.
+const arc = (cx, cy, rx, ry, a0, a1, n = 14) => Array.from({ length: n + 1 }, (_, i) => {
+  const a = (a0 + (a1 - a0) * i / n) * Math.PI / 180; return [cx + rx * Math.cos(a), cy + ry * Math.sin(a)];
+});
+const P_BOWL = [[28, 10], [52, 10], ...arc(52, 31, 20, 21, -90, 90), [28, 52]];
+const O_RING = arc(50, 50, 30, 40, -90, 270, 28);
+const LETTERS = {
+  A: [[[50, 10], [20, 90]], [[50, 10], [80, 90]], [[33, 60], [67, 60]]],
+  B: [[[28, 10], [28, 90]], [[28, 10], [52, 10], ...arc(52, 29, 18, 19, -90, 90), [28, 48]], [[28, 48], [55, 48], ...arc(55, 69, 21, 21, -90, 90), [28, 90]]],
+  C: [arc(52, 50, 30, 40, -45, -315, 24)],
+  D: [[[28, 10], [28, 90]], [[28, 10], [42, 10], ...arc(42, 50, 32, 40, -90, 90, 20), [28, 90]]],
+  E: [[[72, 10], [28, 10], [28, 90], [72, 90]], [[28, 50], [64, 50]]],
+  F: [[[72, 10], [28, 10], [28, 90]], [[28, 50], [62, 50]]],
+  G: [arc(52, 50, 30, 40, -45, -360, 24), [[82, 50], [58, 50]]],
+  H: [[[25, 10], [25, 90]], [[75, 10], [75, 90]], [[25, 50], [75, 50]]],
+  I: [[[50, 10], [50, 90]], [[32, 10], [68, 10]], [[32, 90], [68, 90]]],
+  J: [[[65, 10], [65, 68], ...arc(47, 68, 18, 22, 0, 180)]],
+  K: [[[28, 10], [28, 90]], [[72, 10], [28, 56]], [[42, 42], [74, 90]]],
+  L: [[[30, 10], [30, 90], [72, 90]]],
+  M: [[[20, 90], [20, 10], [50, 60], [80, 10], [80, 90]]],
+  N: [[[25, 90], [25, 10], [75, 90], [75, 10]]],
+  O: [O_RING],
+  P: [[[28, 10], [28, 90]], P_BOWL],
+  Q: [O_RING, [[58, 70], [80, 92]]],
+  R: [[[28, 10], [28, 90]], P_BOWL, [[45, 52], [74, 90]]],
+  S: [[...arc(50, 30, 22, 20, -30, -270), ...arc(50, 70, 22, 20, -90, 150)]],
+  T: [[[20, 10], [80, 10]], [[50, 10], [50, 90]]],
+  U: [[[25, 10], ...arc(50, 60, 25, 30, 180, 0), [75, 10]]],
+  V: [[[20, 10], [50, 90], [80, 10]]],
+  W: [[[12, 10], [30, 90], [50, 30], [70, 90], [88, 10]]],
+  X: [[[22, 10], [78, 90]], [[78, 10], [22, 90]]],
+  Y: [[[22, 10], [50, 50], [78, 10]], [[50, 50], [50, 90]]],
+  Z: [[[22, 10], [78, 10], [22, 90], [78, 90]]]
+};
+const WORDS = { A: ['apple', '🍎'], B: ['ball', '⚽'], C: ['cat', '🐱'], D: ['dog', '🐶'], E: ['elephant', '🐘'], F: ['fish', '🐟'],
+  G: ['grapes', '🍇'], H: ['house', '🏠'], I: ['ice cream', '🍦'], J: ['juice', '🧃'], K: ['key', '🔑'], L: ['lion', '🦁'],
+  M: ['moon', '🌙'], N: ['nose', '👃'], O: ['orange', '🍊'], P: ['pig', '🐷'], Q: ['queen', '👸'], R: ['rainbow', '🌈'],
+  S: ['sun', '☀️'], T: ['tree', '🌳'], U: ['umbrella', '☂️'], V: ['violin', '🎻'], W: ['whale', '🐳'], X: ['fox', '🦊'],
+  Y: ['yo-yo', '🪀'], Z: ['zebra', '🦓'] };
+
 // Each make() returns one question: id (to avoid repeats), prompt, options, praise, and a real-world "go find" line.
 const GAMES = {
   colors: { title: 'Colors', icon: svg('circle', '#E5534B'), make() {
@@ -134,6 +175,12 @@ const GAMES = {
   counting: { title: 'Counting', icon: '🖐️', count: true, make() {
     const n = 1 + (Math.random() * 5 | 0), thing = pick(THINGS);
     return { id: n, n, thing, prompt: 'Tap each one to count!', praise: `${n}! You counted ${n}!`, find: 'Can you count your fingers? One, two, three…' };
+  } },
+  letters: { title: 'Letters', icon: '<b style="font-size:66px;color:#9B6BCC">A</b>', trace: true, make() {
+    const L = pick(Object.keys(LETTERS)), [word, emoji] = WORDS[L], spoken = L === 'A' ? 'ay' : L;  // a lone "A" is read as "uh"
+    const praise = L === 'X' ? `X! Fox ends with X!` : `${spoken}! ${spoken} is for ${word}!`;
+    return { id: L, L, strokes: LETTERS[L], prompt: `Trace the letter ${spoken}.`, praise, reveal: `${L} ${emoji}`,
+      find: `Can you draw a big ${spoken} in the air with your finger?` };
   } }
 };
 
@@ -171,15 +218,65 @@ function nextQ() {
   cur.q++; cur.prev = item.id; cur.item = item; cur.misses = 0; cur.counted = 0;
   screen = 'game';
   const dots = [1, 2, 3, 4, 5].map(i => `<span class="dot ${i <= cur.q ? 'on' : ''}"></span>`).join('');
-  const opts = g.count
-    ? Array.from({ length: item.n }, () => `<button class="opt"><span class="em">${item.thing}</span></button>`).join('')
+  const opts = g.trace ? '<canvas class="trace"></canvas>'
+    : g.count ? Array.from({ length: item.n }, () => `<button class="opt"><span class="em">${item.thing}</span></button>`).join('')
     : item.options.map((o, i) => `<button class="opt" data-i="${i}">${o.html}</button>`).join('');
   app.innerHTML = `<div class="bar"><button class="home" aria-label="Home">🏠</button><div class="dots">${dots}</div><span style="width:72px"></span></div>
     <button class="prompt">${item.prompt}</button><div class="opts ${g.count ? 'count' : ''}">${opts}</div>`;
   app.querySelector('.home').onclick = showHome;
   app.querySelector('.prompt').onclick = () => say(item.prompt);
+  if (g.trace) setupTrace(app.querySelector('.trace'), item);
   app.querySelectorAll('.opt').forEach(b => b.onclick = () => g.count ? countTap(b) : answer(b));
   say(item.prompt);
+}
+
+// Tracing is forgiving on purpose: any order or direction, and a stroke counts once the finger has covered most of it.
+function setupTrace(cv, item) {
+  const S = cv.clientWidth, dpr = window.devicePixelRatio || 1;
+  cv.width = cv.height = S * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr * S / 100, dpr * S / 100); ctx.lineCap = ctx.lineJoin = 'round';
+  const strokes = item.strokes.map(pts => {
+    const samples = [];  // a point every ~3 units along the stroke
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 3));
+      for (let j = 0; j <= n; j++) samples.push([x0 + (x1 - x0) * j / n, y0 + (y1 - y0) * j / n]);
+    }
+    return { pts, samples, hit: samples.map(() => false), done: false };
+  });
+  const ink = [];
+  let trail = null;
+  const line = (pts, color, w) => {
+    ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath();
+    pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+  };
+  const draw = () => {
+    ctx.clearRect(0, 0, 100, 100);
+    strokes.forEach(s => line(s.pts, s.done ? '#9B6BCC' : '#EFE4D2', 14));
+    ink.forEach(t => line(t, 'rgba(155,107,204,.5)', 7));
+    const next = strokes.find(s => !s.done);  // green dot shows where to start
+    if (next) { ctx.fillStyle = '#58B368'; ctx.beginPath(); ctx.arc(next.pts[0][0], next.pts[0][1], 6, 0, 7); ctx.fill(); }
+  };
+  const mark = ([x, y]) => strokes.forEach(s => {
+    if (s.done) return;
+    s.samples.forEach(([sx, sy], i) => { if ((sx - x) ** 2 + (sy - y) ** 2 < 110) s.hit[i] = true; });
+    if (s.hit.filter(Boolean).length >= 0.85 * s.hit.length) s.done = true;
+  });
+  const at = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * 100, (e.clientY - r.top) / r.height * 100]; };
+  const move = p => {
+    const last = trail[trail.length - 1] || p, n = Math.max(1, Math.ceil(Math.hypot(p[0] - last[0], p[1] - last[1]) / 3));
+    for (let j = 1; j <= n; j++) mark([last[0] + (p[0] - last[0]) * j / n, last[1] + (p[1] - last[1]) * j / n]);
+    trail.push(p); draw();
+    if (strokes.every(s => s.done)) {
+      busy = true; trail = null; ink.length = 0; draw();
+      app.querySelector('.prompt').textContent = item.reveal; say(item.praise);
+      setTimeout(nextQ, 3200);
+    }
+  };
+  cv.onpointerdown = e => { if (busy) return; cv.setPointerCapture(e.pointerId); trail = []; ink.push(trail); move(at(e)); };
+  cv.onpointermove = e => { if (trail && !busy) move(at(e)); };
+  cv.onpointerup = cv.onpointercancel = () => { trail = null; };
+  draw();
 }
 
 function answer(b) {
