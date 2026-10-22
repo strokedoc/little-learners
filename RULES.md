@@ -27,8 +27,11 @@ Every feature must pass all of these.
 
 ## 5. Made for small hands and pre-readers
 - Huge tap targets (≥ 90 px), everything is spoken aloud, no reading needed.
-- Content matched to age 3: colours, shapes, counting 1–5, animals, big vs small, tracing capital letters
-  (forgiving: any order or direction counts).
+- Content matched to **her** level (strong on colours, shapes and counting to ~12; learning the alphabet;
+  loves drawing and puzzles): most games build the alphabet — tracing, letter hunt, letter puzzles, and
+  I Spy where every object is an alphabet word. Colours & shapes are combined ("the blue star") and
+  counting goes to 10, so they stretch her rather than bore her. Tracing is forgiving (any order or direction).
+- Wrong taps teach instead of scold: in I Spy, tapping the wrong object just names it.
 
 ## 6. Safe and private
 - No ads, no purchases, no accounts, no links out, no analytics, no data leaves the device.

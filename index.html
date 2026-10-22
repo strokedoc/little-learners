@@ -51,6 +51,21 @@
   .opt.no { opacity:.35; }
   .opt.yes, .opt.hint { box-shadow: 0 0 0 6px var(--accent); }
   .opt.yes { transform: scale(1.08); }
+  .scene { position:relative; width:100%; height:100%; min-height:320px; border-radius:24px; overflow:hidden;
+    background: linear-gradient(#D6ECF8 0 45%, #D4EBC0 45%); }
+  .scene .opt { position:absolute; width:auto; height:auto; padding:6px; background:none; box-shadow:none; border-radius:50%;
+    transform:translate(-50%, -50%); font-size: clamp(40px, 11vw, 64px); line-height:1; }
+  .scene .opt.yes { transform:translate(-50%, -50%) scale(1.2); }
+  .scene .opt.found { background:rgba(255,255,255,.7); box-shadow:0 0 0 4px var(--accent); }
+  .glyph { font-size: clamp(64px, 18vw, 120px); color:#9B6BCC; font-weight:800; line-height:1; }
+  .tile .glyph { font-size:66px; }
+  .puzzle { width:100%; display:flex; flex-direction:column; align-items:center; gap:18px; }
+  .board { position:relative; background:var(--card); border-radius:16px; box-shadow:0 4px 0 var(--soft); }
+  .board img { display:block; width:100%; height:100%; opacity:.18; border-radius:16px; }
+  .tray { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; width:100%; }
+  .piece { background-color:#fff; border-radius:10px; box-shadow:0 3px 0 var(--soft); touch-action:none; }
+  .piece.drag { position:fixed; z-index:5; box-shadow:0 8px 18px rgba(0,0,0,.15); }
+  .piece.placed { position:absolute; border-radius:0; box-shadow:none; }
   .trace { width: min(100%, 58dvh, 520px); aspect-ratio:1; background:var(--card); border-radius:28px; box-shadow:0 4px 0 var(--soft); touch-action:none; }
   .count .opt { width: clamp(90px, 22vw, 150px); height: clamp(90px, 22vw, 150px); position:relative; }
   .count .opt.done .em { opacity:.3; }
@@ -150,37 +165,50 @@ const WORDS = { A: ['apple', '🍎'], B: ['ball', '⚽'], C: ['cat', '🐱'], D:
   S: ['sun', '☀️'], T: ['tree', '🌳'], U: ['umbrella', '☂️'], V: ['violin', '🎻'], W: ['whale', '🐳'], X: ['fox', '🦊'],
   Y: ['yo-yo', '🪀'], Z: ['zebra', '🦓'] };
 
-// Each make() returns one question: id (to avoid repeats), prompt, options, praise, and a real-world "go find" line.
+const spokenName = L => L === 'A' ? 'ay' : L;  // a lone "A" is read aloud as "uh"
+const letterPraise = L => L === 'X' ? 'X! Fox ends with X!' : `${spokenName(L)}! ${spokenName(L)} is for ${WORDS[L][0]}!`;
+
+// Pitched at her level: colours/shapes/counting are stretch versions; most games build the alphabet.
+// Each make() returns one question: id (to avoid repeats), prompt, praise, a real-world "go find" line, and its options.
 const GAMES = {
-  colors: { title: 'Colors', icon: svg('circle', '#E5534B'), make() {
-    const opts = sample(COLORS, 3), [name] = opts[0];
-    return { id: name, prompt: `Tap the ${name} one.`, praise: `Yes! ${cap(name)}!`, find: `Can you find something ${name} near you?`,
-      options: shuffle(opts).map(c => ({ html: `<div class="blob" style="background:${c[1]}"></div>`, correct: c[0] === name })) };
+  letters: { title: 'Trace', icon: '<b class="glyph">A</b>', trace: true, make() {
+    const L = pick(Object.keys(LETTERS)), s = spokenName(L);
+    return { id: L, strokes: LETTERS[L], prompt: `Trace the letter ${s}.`, praise: letterPraise(L), reveal: `${L} ${WORDS[L][1]}`,
+      find: `Can you draw a big ${s} in the air with your finger?` };
   } },
-  shapes: { title: 'Shapes', icon: svg('triangle', '#4A90D9'), make() {
-    const opts = sample(Object.keys(SHAPES), 3), name = opts[0], fill = pick(COLORS)[1];
-    return { id: name, prompt: `Find the ${name}.`, praise: `Yes! A ${name}!`, find: `Can you find a ${name} shape near you?`,
-      options: shuffle(opts).map(s => ({ html: svg(s, fill), correct: s === name })) };
+  hunt: { title: 'Find the Letter', icon: '🔍', make() {
+    const opts = sample(Object.keys(WORDS), 3), L = opts[0], s = spokenName(L);
+    return { id: L, prompt: `Find the letter ${s}.`, praise: letterPraise(L), reveal: `${L} ${WORDS[L][1]}`,
+      find: `Can you find the letter ${s} in a book or on a sign?`,
+      options: shuffle(opts).map(o => ({ html: `<b class="glyph">${o}</b>`, correct: o === L })) };
+  } },
+  puzzle: { title: 'Puzzle', icon: '🧩', puzzle: true, rounds: 3, make() {
+    const L = pick(Object.keys(WORDS).filter(l => l !== 'X')), [word, emoji] = WORDS[L], s = spokenName(L);
+    return { id: L, L, emoji, prompt: 'Put the puzzle together!', praise: letterPraise(L), reveal: `${L} is for ${word}`,
+      find: `Can you say it? ${s}, ${s}, ${word}!` };
+  } },
+  seek: { title: 'I Spy', icon: '👀', seek: true, make() {
+    const t = pick(cur.scene.filter(o => !cur.found.includes(o.L))), [word, emoji] = WORDS[t.L];
+    return { id: t.L, prompt: `Can you find the ${word}?`, reveal: `${t.L} ${emoji}`, find: 'Can you spy something blue in this room?',
+      praise: t.L === 'X' ? 'You found the fox!' : `You found the ${word}! ${cap(word)} starts with ${spokenName(t.L)}.`,
+      options: cur.scene.map(o => ({ html: WORDS[o.L][1], name: WORDS[o.L][0], correct: o === t, x: o.x, y: o.y, found: cur.found.includes(o.L) })) };
+  } },
+  colorshape: { title: 'Colors & Shapes', icon: svg('star', '#F2C94C'), make() {
+    const shapes = Object.keys(SHAPES), c = pick(COLORS), s = pick(shapes);
+    const not = (arr, x) => pick(arr.filter(y => y !== x));
+    // Distractors share the colour or the shape, so she has to check both.
+    const opts = [[c, s], [not(COLORS, c), s], [c, not(shapes, s)], [not(COLORS, c), not(shapes, s)]];
+    return { id: c[0] + s, prompt: `Find the ${c[0]} ${s}.`, praise: `Yes! A ${c[0]} ${s}!`, find: `Can you find something ${c[0]} near you?`,
+      options: shuffle(opts).map(([oc, os]) => ({ html: svg(os, oc[1]), correct: oc === c && os === s })) };
+  } },
+  counting: { title: 'Counting', icon: '🖐️', count: true, make() {
+    const n = 3 + (Math.random() * 8 | 0), thing = pick(THINGS);
+    return { id: n, n, thing, prompt: 'Tap each one to count!', praise: `${n}! You counted ${n}!`, reveal: String(n), find: 'Can you count your toes?' };
   } },
   animals: { title: 'Animals', icon: '🐄', make() {
     const opts = sample(ANIMALS, 3), [, sound, name] = opts[0];
     return { id: name, prompt: `Who says ${sound}?`, praise: `Yes! The ${name} says ${sound}!`, find: `Can you say ${sound}, like a ${name}?`,
       options: shuffle(opts).map(a => ({ html: `<span class="em">${a[0]}</span>`, correct: a[2] === name })) };
-  } },
-  sizes: { title: 'Big & Small', icon: '🐘', make() {
-    const thing = pick(THINGS), want = pick(['big', 'small']);
-    return { id: thing + want, prompt: `Tap the ${want} one.`, praise: `Yes! That one is ${want}!`, find: 'Can you find something big, and something small?',
-      options: shuffle(['big', 'small']).map(s => ({ html: `<span class="em ${s === 'small' ? 'small' : ''}">${thing}</span>`, correct: s === want })) };
-  } },
-  counting: { title: 'Counting', icon: '🖐️', count: true, make() {
-    const n = 1 + (Math.random() * 5 | 0), thing = pick(THINGS);
-    return { id: n, n, thing, prompt: 'Tap each one to count!', praise: `${n}! You counted ${n}!`, find: 'Can you count your fingers? One, two, three…' };
-  } },
-  letters: { title: 'Letters', icon: '<b style="font-size:66px;color:#9B6BCC">A</b>', trace: true, make() {
-    const L = pick(Object.keys(LETTERS)), [word, emoji] = WORDS[L], spoken = L === 'A' ? 'ay' : L;  // a lone "A" is read as "uh"
-    const praise = L === 'X' ? `X! Fox ends with X!` : `${spoken}! ${spoken} is for ${word}!`;
-    return { id: L, L, strokes: LETTERS[L], prompt: `Trace the letter ${spoken}.`, praise, reveal: `${L} ${emoji}`,
-      find: `Can you draw a big ${spoken} in the air with your finger?` };
   } }
 };
 
@@ -212,13 +240,17 @@ function startGame(key) { cur = { key, q: 0, prev: null }; nextQ(); }
 function nextQ() {
   busy = false;
   if (timeUp()) return showRest();
-  if (cur.q >= 5) return showDone();
-  const g = GAMES[cur.key];
+  const g = GAMES[cur.key], rounds = g.rounds || 5;
+  if (cur.q >= rounds) return showDone();
+  if (g.seek && !cur.scene) { cur.scene = makeScene(); cur.found = []; }  // one scene for the whole round
   let item; do { item = g.make(); } while (item.id === cur.prev);
   cur.q++; cur.prev = item.id; cur.item = item; cur.misses = 0; cur.counted = 0;
   screen = 'game';
-  const dots = [1, 2, 3, 4, 5].map(i => `<span class="dot ${i <= cur.q ? 'on' : ''}"></span>`).join('');
-  const opts = g.trace ? '<canvas class="trace"></canvas>'
+  const dots = Array.from({ length: rounds }, (_, i) => `<span class="dot ${i < cur.q ? 'on' : ''}"></span>`).join('');
+  const opts = g.seek ? `<div class="scene">${item.options.map((o, i) =>
+      `<button class="opt ${o.found ? 'found' : ''}" data-i="${i}" style="left:${o.x}%;top:${o.y}%">${o.html}</button>`).join('')}</div>`
+    : g.puzzle ? '<div class="puzzle"></div>'
+    : g.trace ? '<canvas class="trace"></canvas>'
     : g.count ? Array.from({ length: item.n }, () => `<button class="opt"><span class="em">${item.thing}</span></button>`).join('')
     : item.options.map((o, i) => `<button class="opt" data-i="${i}">${o.html}</button>`).join('');
   app.innerHTML = `<div class="bar"><button class="home" aria-label="Home">🏠</button><div class="dots">${dots}</div><span style="width:72px"></span></div>
@@ -226,6 +258,7 @@ function nextQ() {
   app.querySelector('.home').onclick = showHome;
   app.querySelector('.prompt').onclick = () => say(item.prompt);
   if (g.trace) setupTrace(app.querySelector('.trace'), item);
+  if (g.puzzle) setupPuzzle(app.querySelector('.puzzle'), item);
   app.querySelectorAll('.opt').forEach(b => b.onclick = () => g.count ? countTap(b) : answer(b));
   say(item.prompt);
 }
@@ -284,9 +317,12 @@ function answer(b) {
   const item = cur.item;
   if (item.options[b.dataset.i].correct) {
     busy = true; b.classList.add('yes'); say(item.praise);
+    if (item.reveal) app.querySelector('.prompt').textContent = item.reveal;
+    if (cur.found) cur.found.push(item.id);
     setTimeout(nextQ, 2200);
   } else {
-    b.classList.add('no'); say('Try again.');
+    const name = item.options[b.dataset.i].name;  // in I Spy, a wrong tap still teaches a word
+    b.classList.add('no'); say(name ? `That's the ${name}.` : 'Try again.');
     if (++cur.misses >= 2) app.querySelectorAll('.opt').forEach(o => { if (item.options[o.dataset.i].correct) o.classList.add('hint'); });
   }
 }
@@ -295,8 +331,56 @@ function countTap(b) {
   if (busy || b.classList.contains('done')) return;
   b.classList.add('done');
   b.insertAdjacentHTML('beforeend', `<span class="n">${++cur.counted}</span>`);
-  if (cur.counted === cur.item.n) { busy = true; setTimeout(() => say(cur.item.praise), 500); setTimeout(nextQ, 3200); }
+  if (cur.counted === cur.item.n) {
+    busy = true; app.querySelector('.prompt').textContent = cur.item.reveal;  // link the count to the written number
+    setTimeout(() => say(cur.item.praise), 500); setTimeout(nextQ, 3200);
+  }
   else say(String(cur.counted));
+}
+
+// 14 alphabet pictures scattered over a 4×5 grid (with a little jitter) so nothing overlaps.
+function makeScene() {
+  const cells = shuffle(Array.from({ length: 20 }, (_, i) => i));
+  return sample(Object.keys(WORDS), 14).map((L, k) => ({ L,
+    x: (cells[k] % 4 + 0.5 + (Math.random() - 0.5) * 0.4) * 25,
+    y: ((cells[k] / 4 | 0) + 0.5 + (Math.random() - 0.5) * 0.4) * 20 }));
+}
+
+// The picture is a letter plus its word-picture, cut into 3×2 pieces. A faint copy on the board shows where each goes.
+function setupPuzzle(box, item) {
+  const c = document.createElement('canvas'); c.width = 600; c.height = 400;
+  const x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, 600, 400); x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillStyle = '#9B6BCC'; x.font = '800 300px ui-rounded, system-ui, sans-serif'; x.fillText(item.L, 160, 215);
+  x.font = '230px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; x.fillText(item.emoji, 440, 215);
+  const img = c.toDataURL(), W = Math.min(box.clientWidth, 480) - 20, s = W / 3;  // -20 leaves room for 3 pieces + gaps per tray row
+  box.innerHTML = `<div class="board" style="width:${W}px;height:${2 * s}px"><img src="${img}" alt=""></div><div class="tray" style="min-height:${2 * s + 10}px"></div>`;  // fixed height so the board never jumps
+  const board = box.querySelector('.board'), tray = box.querySelector('.tray');
+  let left = 6;
+  shuffle([0, 1, 2, 3, 4, 5]).forEach(i => {
+    const col = i % 3, row = i / 3 | 0, p = document.createElement('div');
+    p.className = 'piece';
+    p.style.cssText = `width:${s}px;height:${s}px;background-image:url(${img});background-size:${W}px ${2 * s}px;background-position:-${col * s}px -${row * s}px`;
+    tray.appendChild(p);
+    let dx, dy;
+    p.onpointerdown = e => {
+      if (busy || p.dataset.placed) return;
+      p.setPointerCapture(e.pointerId);
+      const r = p.getBoundingClientRect(); dx = e.clientX - r.left; dy = e.clientY - r.top;
+      p.classList.add('drag'); p.style.left = r.left + 'px'; p.style.top = r.top + 'px';
+    };
+    p.onpointermove = e => { if (p.classList.contains('drag')) { p.style.left = e.clientX - dx + 'px'; p.style.top = e.clientY - dy + 'px'; } };
+    p.onpointerup = p.onpointercancel = () => {
+      if (!p.classList.contains('drag')) return;
+      const r = p.getBoundingClientRect(), b = board.getBoundingClientRect();  // measure before leaving drag mode
+      p.classList.remove('drag');
+      if (Math.hypot(r.left - (b.left + col * s), r.top - (b.top + row * s)) < s * 0.45) {  // close enough: snap in
+        p.dataset.placed = 1; p.classList.add('placed'); board.appendChild(p);
+        p.style.left = col * s + 'px'; p.style.top = row * s + 'px';
+        if (!--left) { busy = true; app.querySelector('.prompt').textContent = item.reveal; say(item.praise); setTimeout(nextQ, 3500); }
+      } else { p.style.left = p.style.top = ''; }  // gently back to the tray, no "wrong" sound
+    };
+  });
 }
 
 function showDone() {

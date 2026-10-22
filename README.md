@@ -1,6 +1,7 @@
 # Little Learners
 
-Calm, offline learning games for a 3-year-old: colours, shapes, animals, big & small, counting, and letter tracing.
+Calm, offline learning games for a 3-year-old: letter tracing, letter hunt, letter puzzles, I Spy,
+colours & shapes, counting to 10, and animal sounds.
 Built to be deliberately **non-addictive** — see [RULES.md](RULES.md) for the design rules.
 
 **Install on iPhone/iPad:** open the site in Safari → Share → *Add to Home Screen*. Open it once while
